@@ -459,7 +459,7 @@ app.post('/api/turn', async (req, res) => {
   try {
     const stream = await anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
+      max_tokens: 3000,
       system: buildSystemPrompt(gameState),
       messages: trimmedHistory
     });
