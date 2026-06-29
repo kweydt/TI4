@@ -612,6 +612,24 @@
   .choice-btn:hover, .choice-btn:active { background: rgba(74,158,255,0.12); border-color: var(--blue); color: #fff; }
   .choice-num { font-family: var(--font-mono); font-size: 10px; color: var(--blue); display: block; margin-bottom: 2px; letter-spacing: 0.05em; }
 
+  /* Strategy Card Picker */
+  .sc-picker { margin-top: 8px; }
+  .sc-picker-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; margin-bottom: 10px; }
+  .sc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .sc-card { position: relative; border-radius: 7px; border: 1px solid var(--border); background: #080d18; cursor: pointer; transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s; overflow: hidden; display: flex; flex-direction: column; }
+  .sc-card:hover:not(.sc-taken) { transform: translateY(-3px); border-color: var(--dim); box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+  .sc-card.sc-taken { opacity: 0.38; cursor: default; filter: grayscale(0.4); }
+  .sc-card.sc-taken:hover { transform: none; }
+  .sc-accent { height: 3px; flex-shrink: 0; }
+  .sc-top { padding: 10px 10px 6px; display: flex; align-items: flex-start; gap: 8px; }
+  .sc-initiative { font-family: var(--font-title); font-size: 22px; line-height: 1; color: var(--text); opacity: 0.9; flex-shrink: 0; min-width: 22px; }
+  .sc-name { font-family: var(--font-title); font-size: 11px; letter-spacing: 0.08em; color: var(--text); line-height: 1.2; margin-top: 3px; }
+  .sc-body { padding: 0 10px 10px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .sc-ability { font-family: var(--font-mono); font-size: 9px; line-height: 1.45; color: var(--dim); }
+  .sc-ability strong { font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 1px; }
+  .sc-taken-by { position: absolute; top: 6px; right: 7px; font-family: var(--font-mono); font-size: 8px; color: var(--dim); background: rgba(0,0,0,0.6); padding: 1px 5px; border-radius: 3px; letter-spacing: 0.04em; }
+  .sc-card:not(.sc-taken):hover .sc-initiative { opacity: 1; }
+
   /* Coach Panel */
   #coach-panel { flex-shrink: 0; width: 260px; display: flex; flex-direction: column; background: rgba(155,93,229,0.04); overflow: hidden; }
   #coach-header { flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid rgba(155,93,229,0.25); background: rgba(155,93,229,0.07); }
@@ -2287,7 +2305,11 @@ function parseResponse(fullText) {
   const oppMatch     = fullText.match(/\[OPPONENTS\]([\s\S]*?)(?=\[GM\]|\[COACH\]|\[CHOICES\]|\[DEBRIEF\]|<!--STATE|$)/);
   const choicesMatch = fullText.match(/\[CHOICES\]([\s\S]*?)(?=\[DEBRIEF\]|<!--STATE|$)/);
   const debriefMatch = fullText.match(/\[DEBRIEF\]([\s\S]*?)(?=<!--STATE|$)/);
-  if (gmMatch)    sections.gm        = gmMatch[1].trim();
+  if (gmMatch) {
+    const gmText = gmMatch[1].trim();
+    sections.showStrategyCards = /\[SHOW_STRATEGY_CARDS\]/i.test(gmText);
+    sections.gm = gmText.replace(/\[SHOW_STRATEGY_CARDS\]/gi, '').trim();
+  }
   if (coachMatch) sections.coach     = coachMatch[1].trim();
   if (oppMatch)   sections.opponents = oppMatch[1].trim();
   if (choicesMatch) {
@@ -2341,8 +2363,83 @@ function renderSections(sections) {
   if (sections.gm)        addEntry('gm',       'GAME MASTER', '⬡', formatMarkdown(sections.gm));
   if (sections.coach)     updateCoach(formatMarkdown(sections.coach));
   if (sections.opponents) addEntry('opponent', 'OPPONENTS',   '⬟', formatMarkdown(sections.opponents));
+  if (sections.showStrategyCards) renderStrategyCardPicker();
   if (sections.choices && sections.choices.length > 0) appendChoices(sections.choices);
   if (sections.debrief)   renderDebrief(sections.debrief);
+}
+
+// ── Strategy Card Data & Picker ───────────────────────────────────────────────
+
+const STRATEGY_CARDS = [
+  { initiative: 1, name: 'Leadership', color: '#e8c44a',
+    primary: 'Gain 3 command tokens. Redistribute your command tokens as you choose.',
+    secondary: 'Spend 1 strategy CC → gain 1 command token.' },
+  { initiative: 2, name: 'Diplomacy', color: '#4a9eff',
+    primary: 'Choose a non-home system with a planet. Players remove ships from adjacent systems and cannot activate it next round. Place 2 CCs from supply on systems of your choice.',
+    secondary: 'Spend 1 strategy CC → place 1 CC from supply onto any system you control.' },
+  { initiative: 3, name: 'Politics', color: '#9b5de5',
+    primary: 'Draw 2 agenda cards, keep 1, discard 1. Take the Speaker token (or keep it). Draw 2 action cards.',
+    secondary: 'Spend 1 strategy CC → draw 1 action card.' },
+  { initiative: 4, name: 'Construction', color: '#a0c070',
+    primary: 'Place 1 space dock AND 1 PDS in any systems you control (one each, separately).',
+    secondary: 'Spend 1 strategy CC → place 1 space dock OR 1 PDS in a system you control.' },
+  { initiative: 5, name: 'Trade', color: '#f4a24a',
+    primary: 'Gain 3 trade goods. All players replenish their commodities. You may open or close trade deals.',
+    secondary: 'Spend 1 strategy CC → replenish your commodities.' },
+  { initiative: 6, name: 'Warfare', color: '#e05050',
+    primary: 'Remove 1 command token from the board and return it to your reinforcements. Take 1 additional action immediately.',
+    secondary: 'Spend 1 strategy CC → remove 1 of your CCs from the board.' },
+  { initiative: 7, name: 'Technology', color: '#40c0c0',
+    primary: 'Research 1 technology. Then research a second technology — pay its normal cost minus 6 resources.',
+    secondary: 'Spend 1 strategy CC → research 1 technology, paying its cost plus 4 resources.' },
+  { initiative: 8, name: 'Imperial', color: '#c87040',
+    primary: 'Score 1 Imperial Point if you control Mecatol Rex OR draw 1 secret objective. Reveal and place 1 public Stage I objective.',
+    secondary: 'Spend 1 strategy CC → draw 1 secret objective.' },
+];
+
+function renderStrategyCardPicker() {
+  // Build map of taken cards from state
+  const takenMap = {}; // cardName → taker faction name
+  if (currentState) {
+    if (currentState.player?.strategyCard) takenMap[currentState.player.strategyCard] = currentState.faction;
+    (currentState.opponents || []).forEach(o => { if (o.strategyCard) takenMap[o.strategyCard] = o.faction || o.name; });
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'sc-picker';
+  wrapper.innerHTML = `<div class="sc-picker-label">Choose your strategy card</div>`;
+
+  const grid = document.createElement('div');
+  grid.className = 'sc-grid';
+
+  STRATEGY_CARDS.forEach(card => {
+    const taken = takenMap[card.name];
+    const div = document.createElement('div');
+    div.className = 'sc-card' + (taken ? ' sc-taken' : '');
+    div.innerHTML = `
+      <div class="sc-accent" style="background:${card.color}"></div>
+      <div class="sc-top">
+        <div class="sc-initiative" style="color:${card.color}">${card.initiative}</div>
+        <div class="sc-name">${card.name.toUpperCase()}</div>
+      </div>
+      <div class="sc-body">
+        <div class="sc-ability"><strong>Primary</strong>${card.primary}</div>
+        <div class="sc-ability"><strong>Secondary</strong>${card.secondary}</div>
+      </div>
+      ${taken ? `<div class="sc-taken-by">${taken.split(' ').pop()}</div>` : ''}
+    `;
+    if (!taken) {
+      div.addEventListener('click', () => {
+        wrapper.remove();
+        selectChoice(`I choose the ${card.name} strategy card.`);
+      });
+    }
+    grid.appendChild(div);
+  });
+
+  wrapper.appendChild(grid);
+  el('log').appendChild(wrapper);
+  scrollToBottom(true);
 }
 
 function appendChoices(choices) {
