@@ -378,7 +378,7 @@ function buildInitialState(factionName) {
     round: 1,
     phase: 'strategy',
     turn: 0,
-    speakerIndex: 0,
+    speakerIndex: Math.floor(Math.random() * (getOpponents(factionName).length + 1)),
     faction: factionName,
     player: {
       vp: 0,
