@@ -2021,12 +2021,8 @@ el('fs-start-btn').addEventListener('click', async () => {
   el('fs-start-btn').disabled = true;
   el('fs-start-btn').textContent = 'Starting…';
 
-  await fetch('/api/state/reset', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ faction: selectedFaction })
-  });
-
+  localStorage.removeItem('ti4_state');
+  localStorage.removeItem('ti4_history');
   startGame(selectedFaction);
 });
 
@@ -2960,7 +2956,7 @@ async function generateBoard() {
     svgEl.setAttribute('viewBox', '0 0 120 30');
   }
   try {
-    const res = await fetch('/api/board', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const res = await fetch('/api/board', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: currentState }) });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     if (data.board) { boardState = []; applyBoardDelta(data.board); }
@@ -3036,6 +3032,7 @@ function finalizeStream(fullText) {
       if (updates.board) { applyBoardDelta(updates.board); delete updates.board; }
       deepMerge(currentState, updates);
       applyStateToUI(currentState);
+      saveLocalState();
     } catch(e) { console.warn('State parse failed:', e); }
   }
   if (boardState.length === 0 && currentState?.faction) generateBoard();
@@ -3080,7 +3077,7 @@ async function sendTurn(text) {
     const res = await fetch('/api/turn', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ history })
+      body: JSON.stringify({ history, state: currentState })
     });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
@@ -3333,6 +3330,7 @@ el('faction-badge').addEventListener('click', showFactionModal);
 el('new-game-btn').addEventListener('click', () => {
   if (!confirm('Return to faction selection? Current game progress will be lost.')) return;
   history = []; currentState = null; streaming = false; boardState = [];
+  localStorage.removeItem('ti4_state'); localStorage.removeItem('ti4_board');
   if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
   el('game-screen').classList.add('hidden');
   el('faction-screen').classList.remove('hidden');
@@ -3354,29 +3352,38 @@ el('input-area').addEventListener('keydown', function(e) {
 buildFactionList();
 buildGlossary();
 
-// If there's an existing in-progress game, skip straight to it
+function saveLocalState() {
+  if (currentState) localStorage.setItem('ti4_state', JSON.stringify(currentState));
+  if (boardState.length) localStorage.setItem('ti4_board', JSON.stringify(boardState));
+}
+
+// If there's a local saved game, offer to resume it
 (async () => {
   try {
-    const res = await fetch('/api/state');
-    const state = await res.json();
-    if (state && state.faction && state.round > 0) {
-      if (state.board) { boardState = []; applyBoardDelta(state.board); }
-      currentState = state;
-      applyStateToUI(state);
-      // There's a saved game — ask if they want to continue
-      const resume = confirm(`Continue saved game as ${state.faction}?`);
-      if (resume) {
-        startGame(state.faction);
-        // Don't send opening message — let user type
-        el('log').innerHTML = '';
-        history = [];
-        addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`Welcome back, Commander. You are playing as the **${state.faction}**, Round ${state.round}, ${state.phase} phase. What would you like to do?`));
-        el('send-btn').disabled = false;
-        streaming = false;
-        if (boardState.length === 0) generateBoard();
-      }
+    const raw = localStorage.getItem('ti4_state');
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (!state?.faction || !state?.round || state.round < 1) return;
+
+    const boardRaw = localStorage.getItem('ti4_board');
+    if (boardRaw) { boardState = []; applyBoardDelta(JSON.parse(boardRaw)); }
+    currentState = state;
+    applyStateToUI(state);
+
+    const resume = confirm(`Continue saved game as ${state.faction}?`);
+    if (resume) {
+      startGame(state.faction);
+      el('log').innerHTML = '';
+      history = [];
+      addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`Welcome back, Commander. You are playing as the **${state.faction}**, Round ${state.round}, ${state.phase} phase. What would you like to do?`));
+      el('send-btn').disabled = false;
+      streaming = false;
+      if (boardState.length === 0) generateBoard();
+    } else {
+      currentState = null;
+      boardState = [];
     }
-  } catch(e) { /* no saved state, show faction selection */ }
+  } catch(e) { /* no saved state */ }
 })();
 </script>
 <div id="tile-tooltip"></div>

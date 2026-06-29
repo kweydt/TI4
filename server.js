@@ -1,7 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const os = require('os');
 const Anthropic = require('@anthropic-ai/sdk');
 
@@ -406,26 +404,6 @@ function buildInitialState(factionName) {
 
 // ── Persistence ────────────────────────────────────────────────────────────────
 
-const STATE_FILE = path.join(__dirname, 'state.json');
-
-function loadState() {
-  try {
-    if (fs.existsSync(STATE_FILE)) {
-      return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
-    }
-  } catch (e) {
-    console.warn('Could not load state.json, using default');
-  }
-  return buildInitialState('Federation of Sol');
-}
-
-function saveState(state) {
-  try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
-  } catch (e) {
-    console.warn('Could not save state.json:', e.message);
-  }
-}
 
 function deepMerge(target, source) {
   for (const key of Object.keys(source)) {
@@ -457,36 +435,27 @@ Active Laws: ${state.activeLaws.length ? state.activeLaws.join(', ') : 'none'}`;
 
 // ── Server ─────────────────────────────────────────────────────────────────────
 
-let gameState = loadState();
-
-app.get('/api/state', (req, res) => {
-  res.json(gameState);
-});
-
 app.get('/api/factions', (req, res) => {
   res.json(Object.keys(FACTIONS));
 });
 
 app.post('/api/state/reset', (req, res) => {
-  const faction = req.body.faction || 'Federation of Sol';
-  gameState = buildInitialState(faction);
-  saveState(gameState);
-  res.json({ ok: true, faction });
+  res.json({ ok: true });
 });
 
 app.post('/api/turn', async (req, res) => {
-  const { history } = req.body;
+  const { history, state } = req.body;
   if (!history || !Array.isArray(history)) {
     return res.status(400).json({ error: 'history array required' });
   }
 
+  const gameState = state || buildInitialState('Federation of Sol');
   const trimmedHistory = history.slice(-40);
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
   res.setHeader('Cache-Control', 'no-cache');
 
-  let fullResponse = '';
   try {
     const stream = await anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
@@ -497,21 +466,10 @@ app.post('/api/turn', async (req, res) => {
 
     for await (const chunk of stream) {
       if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        fullResponse += chunk.delta.text;
         res.write(chunk.delta.text);
       }
     }
     res.end();
-
-    const stateMatch = fullResponse.match(/<!--STATE:([\s\S]*?)-->/);
-    if (stateMatch) {
-      try {
-        deepMerge(gameState, JSON.parse(stateMatch[1]));
-        saveState(gameState);
-      } catch (e) {
-        console.warn('State parse failed:', e.message);
-      }
-    }
   } catch (err) {
     console.error('Anthropic API error:', err);
     if (!res.headersSent) res.status(500).json({ error: err.message });
@@ -558,7 +516,7 @@ Guidelines:
 });
 
 app.post('/api/board', async (req, res) => {
-  const state = loadState();
+  const state = req.body.state || {};
   const faction = state.faction || 'Federation of Sol';
   const opponentNames = (state.opponents || []).map(o => o.faction).join(', ') || 'Emirates of Hacan, Universities of Jol-Nar, L1Z1X Mindnet';
 
@@ -597,9 +555,6 @@ Rules:
     // Strip any accidental markdown code fences
     const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const board = JSON.parse(clean);
-    // Save to game state
-    state.board = board;
-    saveState(state);
     res.json({ board });
   } catch (err) {
     console.error('Board generation error:', err);
