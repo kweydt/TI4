@@ -1,0 +1,3384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>TI4 — Faction Selection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050810;
+    --panel: #0d1628;
+    --border: #1e2240;
+    --gold: #d4a843;
+    --blue: #4a9eff;
+    --purple: #9b5de5;
+    --orange: #e8521a;
+    --green: #4ecb71;
+    --text: #c4cedf;
+    --dim: #4a5570;
+    --font-title: 'Cinzel', serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-body: 'Inter', sans-serif;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; }
+
+  /* ══════════════════════════════════════════════
+     FACTION SELECTION SCREEN
+  ══════════════════════════════════════════════ */
+
+  #faction-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  #faction-screen.hidden { display: none; }
+
+  /* Header */
+  #fs-header {
+    flex-shrink: 0;
+    padding: 20px 32px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  #fs-header-top {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  }
+  #quiz-open-btn {
+    flex-shrink: 0; margin-top: 2px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+    padding: 9px 18px; border-radius: 5px; cursor: pointer;
+    background: rgba(212,168,67,0.08); border: 1px solid rgba(212,168,67,0.35); color: var(--gold);
+    transition: all 0.15s; white-space: nowrap;
+  }
+  #quiz-open-btn:hover { background: rgba(212,168,67,0.15); border-color: var(--gold); }
+  #fs-title {
+    font-family: var(--font-title);
+    font-size: 22px;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  #fs-subtitle {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+
+  /* Body: list + detail */
+  #fs-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+  }
+
+  /* Left: faction list */
+  #fs-list {
+    width: 300px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    padding: 12px 0;
+  }
+
+  .fs-group-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding: 12px 16px 4px;
+  }
+
+  .fs-faction-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.1s, border-color 0.1s;
+    position: relative;
+  }
+  .fs-faction-row:hover { background: rgba(255,255,255,0.03); }
+  .fs-faction-row.selected {
+    background: rgba(212,168,67,0.07);
+    border-left-color: var(--gold);
+  }
+
+  .fs-faction-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .fs-faction-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .fs-difficulty {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .fs-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .fs-dot.filled { background: var(--gold); }
+
+  .fs-pok-badge {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.06em;
+    color: var(--purple);
+    border: 1px solid rgba(155,93,229,0.4);
+    border-radius: 2px;
+    padding: 1px 4px;
+    flex-shrink: 0;
+  }
+
+  /* Right: detail panel */
+  #fs-detail {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  #fs-detail-empty {
+    margin: auto;
+    text-align: center;
+    color: var(--dim);
+  }
+  #fs-detail-empty .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  #fs-detail-empty p { font-size: 13px; line-height: 1.6; max-width: 260px; }
+
+  #fs-faction-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  #fs-faction-title {
+    font-family: var(--font-title);
+    font-size: 20px;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  #fs-faction-diff {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  #fs-faction-diff-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .diff-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .diff-pip.on { background: var(--gold); }
+
+  #fs-faction-tagline {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+    border-left: 3px solid var(--gold);
+    padding-left: 14px;
+    font-style: italic;
+  }
+
+  .fs-section-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .fs-homeworld-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .fs-planet-chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .fs-tech-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .fs-tech-chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    border: 1px solid rgba(74,158,255,0.3);
+    color: var(--blue);
+    background: rgba(74,158,255,0.06);
+  }
+  .fs-tech-none {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--dim);
+    font-style: italic;
+  }
+
+  .fs-ability-box {
+    background: rgba(155,93,229,0.06);
+    border: 1px solid rgba(155,93,229,0.2);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .fs-pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .fs-pros, .fs-cons {
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .fs-pros {
+    background: rgba(78,203,113,0.05);
+    border: 1px solid rgba(78,203,113,0.2);
+  }
+  .fs-cons {
+    background: rgba(232,82,26,0.05);
+    border: 1px solid rgba(232,82,26,0.2);
+  }
+
+  .fs-pros-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .fs-cons-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .fs-pros ul, .fs-cons ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .fs-pros li, .fs-cons li {
+    font-size: 12px;
+    line-height: 1.4;
+    padding-left: 14px;
+    position: relative;
+    color: var(--text);
+  }
+  .fs-pros li::before { content: '+'; position: absolute; left: 0; color: var(--green); font-weight: 600; }
+  .fs-cons li::before { content: '−'; position: absolute; left: 0; color: var(--orange); font-weight: 600; }
+
+  .fs-tip-box {
+    background: rgba(212,168,67,0.05);
+    border: 1px solid rgba(212,168,67,0.2);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  /* ── Tooltip info icons ── */
+  .tip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(74,158,255,0.1);
+    border: 1px solid rgba(74,158,255,0.25);
+    color: var(--blue);
+    font-size: 8px;
+    font-family: var(--font-body);
+    font-style: normal;
+    font-weight: 700;
+    cursor: help;
+    margin-left: 5px;
+    flex-shrink: 0;
+    vertical-align: middle;
+    position: relative;
+  }
+  .tip-icon::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #060c1a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.55;
+    padding: 8px 11px;
+    border-radius: 5px;
+    width: max-content;
+    max-width: 260px;
+    white-space: pre-line;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    text-align: left;
+  }
+  .tip-icon:hover::after { opacity: 1; }
+
+  /* Tech & planet chip tooltips (appear below so they don't clip) */
+  .fs-tech-chip[data-tip], .fs-planet-chip[data-tip] { position: relative; cursor: help; }
+  .fs-tech-chip[data-tip]::after, .fs-planet-chip[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #060c1a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+    padding: 7px 10px;
+    border-radius: 5px;
+    width: max-content;
+    max-width: 240px;
+    white-space: pre-line;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    text-align: left;
+  }
+  .fs-tech-chip[data-tip]:hover::after, .fs-planet-chip[data-tip]:hover::after { opacity: 1; }
+
+  /* Footer */
+  #fs-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    padding-bottom: calc(16px + var(--safe-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  #fs-selected-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+  }
+  #fs-selected-label span {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  #fs-start-btn {
+    font-family: var(--font-title);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--gold);
+    color: #050810;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  #fs-start-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  #fs-start-btn:not(:disabled):hover { opacity: 0.85; }
+
+  /* Scrollbars */
+  #fs-list::-webkit-scrollbar, #fs-detail::-webkit-scrollbar { width: 4px; }
+  #fs-list::-webkit-scrollbar-track, #fs-detail::-webkit-scrollbar-track { background: transparent; }
+  #fs-list::-webkit-scrollbar-thumb, #fs-detail::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Mobile: stack list above detail */
+  @media (max-width: 600px) {
+    #fs-body { flex-direction: column; }
+    #fs-list { width: 100%; max-height: 220px; border-right: none; border-bottom: 1px solid var(--border); }
+    #fs-header { padding: 16px; }
+    #fs-title { font-size: 16px; }
+    #fs-detail { padding: 16px; }
+    #fs-footer { padding: 12px 16px; }
+  }
+
+  /* ══════════════════════════════════════════════
+     GAME SCREEN
+  ══════════════════════════════════════════════ */
+
+  #game-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  #game-screen.hidden { display: none; }
+
+  #app {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Phase Strip */
+  #phase-strip {
+    display: flex;
+    flex-shrink: 0;
+    height: 44px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .phase-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-title);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    text-transform: uppercase;
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: color 0.2s;
+  }
+  .phase-tab:last-child { border-right: none; }
+  .phase-tab.active { color: var(--gold); background: rgba(212,168,67,0.06); }
+  .phase-tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--gold); }
+  .phase-tab.done { color: rgba(78,203,113,0.5); }
+
+  /* Main Layout */
+  #main-layout { flex: 1; min-height: 0; display: flex; }
+
+  /* Sidebar */
+  #sidebar {
+    width: 240px; flex-shrink: 0; overflow-y: auto;
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+    display: flex; flex-direction: column;
+  }
+  #sidebar::-webkit-scrollbar { width: 3px; }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+  #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Sidebar header (minimap + meta) */
+  #sidebar-header {
+    flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+    padding: 12px 12px 10px; gap: 8px; border-bottom: 1px solid var(--border);
+  }
+  #galaxy-svg { flex-shrink: 0; }
+  #game-header-right { text-align: center; width: 100%; }
+  #faction-badge { font-family: var(--font-mono); font-size: 10px; color: var(--dim); letter-spacing: 0.06em; margin-bottom: 3px; }
+  #round-badge { font-family: var(--font-title); font-size: 13px; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 7px; }
+  .header-btns { display: flex; gap: 6px; justify-content: center; }
+  #new-game-btn {
+    font-family: var(--font-mono); font-size: 10px; color: var(--dim);
+    background: none; border: 1px solid var(--border); border-radius: 3px;
+    padding: 4px 8px; cursor: pointer;
+  }
+  #new-game-btn:hover { color: var(--text); border-color: var(--dim); }
+
+  .sidebar-section-hdr {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--dim); padding: 8px 12px 4px;
+  }
+
+  /* Command Sheet */
+  #command-sheet { flex-shrink: 0; background: transparent; border-bottom: 1px solid var(--border); }
+  #sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 34px; cursor: pointer; user-select: none; }
+  #sheet-title { font-family: var(--font-title); font-size: 10px; letter-spacing: 0.1em; color: var(--gold); text-transform: uppercase; }
+  #sheet-toggle { font-size: 10px; color: var(--dim); transition: transform 0.2s; }
+  #command-sheet.collapsed #sheet-toggle { transform: rotate(180deg); }
+  #command-sheet.collapsed #sheet-body { display: none; }
+  #sheet-body { padding: 0 12px 10px; }
+  #stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 8px; }
+  .stat-cell { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 4px; padding: 4px 4px; text-align: center; }
+  .stat-label { font-family: var(--font-mono); font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; display: block; }
+  .stat-value { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--text); display: block; line-height: 1.2; }
+  .stat-cell.vp .stat-value { color: var(--gold); }
+  .stat-cell.tac .stat-value, .stat-cell.fleet .stat-value { color: var(--blue); }
+  #planets-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .planet-tag { display: flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 3px; font-family: var(--font-mono); font-size: 10px; border: 1px solid; }
+  .planet-tag.ready { border-color: var(--green); color: var(--green); }
+  .planet-tag.exhausted { border-color: var(--border); color: var(--dim); }
+
+  /* Log */
+  #log { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; border-right: 1px solid var(--border); }
+  .entry { flex-shrink: 0; border-radius: 6px; border: 1px solid var(--border); background: rgba(13,22,40,0.6); overflow: hidden; }
+  .entry-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .entry-icon { font-size: 12px; }
+  .entry-who { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
+  .entry-body { padding: 10px 12px; font-size: 14px; line-height: 1.65; }
+  .entry-body p { margin-bottom: 0.5em; }
+  .entry-body p:last-child { margin-bottom: 0; }
+  .entry-body h4 { font-family: var(--font-title); font-size: 12px; letter-spacing: 0.08em; margin: 0.75em 0 0.25em; color: var(--dim); text-transform: uppercase; display: block; }
+  .entry-body strong { color: var(--text); font-weight: 600; }
+  .entry-body em { font-style: italic; }
+  .entry.gm .entry-head { border-color: rgba(74,158,255,0.2); }
+  .entry.gm .entry-icon, .entry.gm .entry-who { color: var(--blue); }
+  .entry.opponent { border-color: rgba(232,82,26,0.2); }
+  .entry.opponent .entry-head { border-color: rgba(232,82,26,0.15); }
+  .entry.opponent .entry-icon, .entry.opponent .entry-who { color: var(--orange); }
+  .entry.player { border-color: rgba(212,168,67,0.3); }
+  .entry.player .entry-head { border-color: rgba(212,168,67,0.2); }
+  .entry.player .entry-icon, .entry.player .entry-who { color: var(--gold); }
+
+  .verdict { display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; padding: 2px 7px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+  .verdict.good  { background: rgba(78,203,113,0.15); color: var(--green);  border: 1px solid rgba(78,203,113,0.4); }
+  .verdict.risky { background: rgba(212,168,67,0.15); color: var(--gold);   border: 1px solid rgba(212,168,67,0.4); }
+  .verdict.poor  { background: rgba(232,82,26,0.15);  color: var(--orange); border: 1px solid rgba(232,82,26,0.4); }
+
+  .dots { display: inline-flex; gap: 5px; align-items: center; padding: 4px 0; }
+  .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); animation: pulse 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100%{opacity:.3;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+
+  /* Choices */
+  .choices { flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .choice-btn { width: 100%; min-height: 52px; padding: 10px 14px; background: rgba(74,158,255,0.06); border: 1px solid rgba(74,158,255,0.3); border-radius: 6px; color: var(--text); font-family: var(--font-body); font-size: 13px; line-height: 1.45; text-align: left; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+  .choice-btn:hover, .choice-btn:active { background: rgba(74,158,255,0.12); border-color: var(--blue); color: #fff; }
+  .choice-num { font-family: var(--font-mono); font-size: 10px; color: var(--blue); display: block; margin-bottom: 2px; letter-spacing: 0.05em; }
+
+  /* Coach Panel */
+  #coach-panel { flex-shrink: 0; width: 260px; display: flex; flex-direction: column; background: rgba(155,93,229,0.04); overflow: hidden; }
+  #coach-header { flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid rgba(155,93,229,0.25); background: rgba(155,93,229,0.07); }
+  #coach-header-icon { color: var(--purple); font-size: 12px; }
+  #coach-header-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--purple); font-weight: 500; }
+  #coach-body { flex: 1; overflow-y: auto; padding: 12px; font-size: 13px; line-height: 1.65; color: var(--text); -webkit-overflow-scrolling: touch; }
+  #coach-body p { margin-bottom: 0.6em; }
+  #coach-body p:last-child { margin-bottom: 0; }
+  #coach-body h4 { font-family: var(--font-title); font-size: 11px; letter-spacing: 0.08em; margin: 0.75em 0 0.25em; color: var(--dim); text-transform: uppercase; display: block; }
+  #coach-body strong { color: var(--text); font-weight: 600; }
+  #coach-body em { font-style: italic; }
+  #coach-empty { color: var(--dim); font-size: 12px; font-style: italic; text-align: center; margin-top: 24px; line-height: 1.6; }
+  #coach-panel.fresh { box-shadow: inset 2px 0 0 var(--purple); transition: box-shadow 0s; }
+  #coach-panel.fade-border { box-shadow: inset 2px 0 0 transparent; transition: box-shadow 2s ease; }
+  @media (max-width: 540px) { #coach-panel { display: none; } #log { border-right: none; } }
+
+  /* Clickable faction badge */
+  #faction-badge { cursor: pointer; }
+  #faction-badge:hover { color: var(--text); }
+
+  /* REF button */
+  #ref-btn {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em;
+    color: var(--dim); background: none; border: 1px solid var(--border);
+    border-radius: 3px; padding: 4px 8px; cursor: pointer;
+  }
+  #ref-btn:hover { color: var(--text); border-color: var(--dim); }
+
+  /* ── Opponent Threat Bar ── */
+  #sidebar-standings { flex-shrink: 0; border-top: 1px solid var(--border); }
+  #threat-bar {
+    display: none; flex-direction: column; gap: 2px; padding: 4px 12px 10px;
+  }
+  .threat-cell {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 0;
+  }
+  .threat-opp-name {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.05em;
+    text-transform: uppercase; flex-shrink: 0; width: 44px; color: var(--dim);
+  }
+  .threat-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .threat-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease, background-color 0.4s ease; }
+  .threat-vp-label { font-family: var(--font-mono); font-size: 9px; flex-shrink: 0; width: 14px; text-align: right; }
+  .threat-warn { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.06em; flex-shrink: 0; margin-left: 3px; }
+
+  /* ── Reference Modal ── */
+  #ref-modal {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #ref-modal.hidden { display: none; }
+  #ref-modal-backdrop { position: absolute; inset: 0; background: rgba(5,8,16,0.9); }
+  #ref-modal-inner {
+    position: relative; width: 720px; max-width: calc(100vw - 24px); max-height: calc(100vh - 48px);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #ref-modal-header {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--border); gap: 12px;
+    background: rgba(255,255,255,0.02);
+  }
+  #ref-modal-tabs { display: flex; gap: 6px; }
+  .ref-tab-btn {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--dim); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em;
+    padding: 5px 12px; cursor: pointer; text-transform: uppercase; transition: all 0.12s;
+  }
+  .ref-tab-btn:hover { border-color: var(--dim); color: var(--text); }
+  .ref-tab-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(74,158,255,0.08); }
+  #ref-modal-close {
+    background: none; border: 1px solid var(--border); color: var(--dim);
+    font-size: 13px; cursor: pointer; padding: 3px 9px; border-radius: 3px; line-height: 1.4; flex-shrink: 0;
+  }
+  #ref-modal-close:hover { color: var(--text); border-color: var(--dim); }
+  #ref-modal-body {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px;
+  }
+  #ref-modal-body::-webkit-scrollbar { width: 4px; }
+  #ref-modal-body::-webkit-scrollbar-track { background: transparent; }
+  #ref-modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .ref-tab-pane { display: none; }
+  .ref-tab-pane.active { display: block; }
+
+  /* Phase flow cards */
+  .ref-phases { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .ref-phase-card {
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 16px;
+  }
+  .ref-phase-title {
+    font-family: var(--font-title); font-size: 11px; letter-spacing: 0.1em;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .ref-phase-num { font-family: var(--font-mono); font-size: 9px; color: var(--dim); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+  .ref-phase-card ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .ref-phase-card li { font-size: 12px; line-height: 1.5; color: var(--text); padding-left: 12px; position: relative; }
+  .ref-phase-card li::before { content: '·'; position: absolute; left: 2px; color: var(--dim); }
+  .ref-phase-card li strong { color: var(--blue); font-weight: 600; }
+
+  /* Combat sequence */
+  .ref-combat-seq { display: flex; flex-direction: column; gap: 10px; }
+  .ref-combat-step {
+    display: flex; gap: 12px; align-items: flex-start;
+    border-left: 2px solid var(--border); padding: 8px 12px;
+    border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01);
+  }
+  .ref-combat-step.space { border-left-color: var(--blue); }
+  .ref-combat-step.ground { border-left-color: var(--orange); }
+  .ref-combat-step.note { border-left-color: var(--gold); background: rgba(212,168,67,0.04); }
+  .ref-step-num { font-family: var(--font-mono); font-size: 10px; color: var(--dim); flex-shrink: 0; min-width: 18px; padding-top: 1px; }
+  .ref-step-body { font-size: 13px; line-height: 1.55; }
+  .ref-step-body strong { color: var(--text); font-weight: 600; }
+  .ref-step-body em { color: var(--dim); font-style: normal; font-size: 11px; }
+  .ref-section-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin: 20px 0 10px; }
+  .ref-section-title:first-child { margin-top: 0; }
+
+  /* Glossary */
+  #glossary-search {
+    width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 12px; color: var(--text); font-family: var(--font-body);
+    font-size: 13px; outline: none; margin-bottom: 14px; display: block;
+  }
+  #glossary-search:focus { border-color: rgba(74,158,255,0.5); }
+  #glossary-search::placeholder { color: var(--dim); }
+  #glossary-list { display: flex; flex-direction: column; gap: 0; }
+  .glossary-item {
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .glossary-item:last-child { border-bottom: none; }
+  .glossary-term {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+    color: var(--gold); flex-shrink: 0; width: 160px; padding-top: 1px;
+  }
+  .glossary-def { font-size: 13px; line-height: 1.55; color: var(--text); flex: 1; }
+  .glossary-item.hidden { display: none; }
+
+  /* ── In-game Faction Guide Modal ── */
+  #faction-modal {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #faction-modal.hidden { display: none; }
+  #faction-modal-backdrop { position: absolute; inset: 0; background: rgba(5,8,16,0.9); }
+  #faction-modal-inner {
+    position: relative;
+    width: 640px; max-width: calc(100vw - 24px); max-height: calc(100vh - 48px);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #faction-modal-header {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  #faction-modal-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+  #faction-modal-close {
+    background: none; border: 1px solid var(--border); color: var(--dim);
+    font-size: 13px; cursor: pointer; padding: 3px 9px; border-radius: 3px; line-height: 1.4;
+  }
+  #faction-modal-close:hover { color: var(--text); border-color: var(--dim); }
+  #faction-modal-body {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 24px 28px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  #faction-modal-body::-webkit-scrollbar { width: 4px; }
+  #faction-modal-body::-webkit-scrollbar-track { background: transparent; }
+  #faction-modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Input Bar */
+  #input-bar { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; padding: 10px 16px; padding-bottom: calc(10px + var(--safe-bottom)); background: var(--panel); border-top: 1px solid var(--border); }
+  #input-area { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--font-body); font-size: 14px; line-height: 1.5; resize: none; min-height: 44px; max-height: 120px; outline: none; -webkit-appearance: none; }
+  #input-area:focus { border-color: rgba(74,158,255,0.5); }
+  #input-area::placeholder { color: var(--dim); }
+  #send-btn { flex-shrink: 0; width: 52px; height: 44px; background: var(--blue); border: none; border-radius: 8px; color: #fff; font-family: var(--font-title); font-size: 11px; letter-spacing: 0.06em; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: opacity 0.15s; }
+  #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #send-btn:not(:disabled):hover { opacity: 0.85; }
+  .send-icon { font-size: 14px; }
+  .send-label { font-size: 9px; }
+
+  /* ── Debrief Card ── */
+  .entry.debrief { border-color: rgba(212,168,67,0.35); background: rgba(212,168,67,0.04); }
+  .entry.debrief .entry-head { border-color: rgba(212,168,67,0.2); cursor: pointer; user-select: none; }
+  .entry.debrief .entry-icon, .entry.debrief .entry-who { color: var(--gold); }
+  .debrief-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .debrief-body.collapsed { display: none; }
+  .debrief-section { display: flex; flex-direction: column; gap: 3px; }
+  .debrief-label {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .debrief-label.well  { color: var(--green); }
+  .debrief-label.miss  { color: var(--orange); }
+  .debrief-label.study { color: var(--blue); }
+  .debrief-text { font-size: 13px; line-height: 1.6; color: var(--text); }
+  .debrief-text strong { color: var(--text); font-weight: 600; }
+
+  /* ── Objectives Panel ── */
+  #objectives-panel {
+    flex-shrink: 0; background: transparent; border-bottom: 1px solid var(--border);
+  }
+  #obj-header {
+    display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 34px;
+    cursor: pointer; user-select: none;
+  }
+  #obj-title { font-family: var(--font-title); font-size: 10px; letter-spacing: 0.1em; color: var(--gold); text-transform: uppercase; }
+  #obj-count { font-family: var(--font-mono); font-size: 9px; color: var(--dim); margin-left: 2px; }
+  #obj-toggle { font-size: 10px; color: var(--dim); margin-left: auto; transition: transform 0.2s; }
+  #objectives-panel.expanded #obj-toggle { transform: rotate(180deg); }
+  #obj-body { padding: 4px 12px 10px; display: none; flex-direction: column; gap: 6px; }
+  #objectives-panel.expanded #obj-body { display: flex; }
+  .obj-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 8px 10px; border-radius: 4px;
+    border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  }
+  .obj-item.scored { border-color: rgba(78,203,113,0.3); background: rgba(78,203,113,0.04); }
+  .obj-type-badge {
+    font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 5px; border-radius: 2px; flex-shrink: 0; margin-top: 1px;
+  }
+  .obj-type-badge.stage1 { color: var(--blue); border: 1px solid rgba(74,158,255,0.3); }
+  .obj-type-badge.stage2 { color: var(--purple); border: 1px solid rgba(155,93,229,0.3); }
+  .obj-type-badge.secret { color: var(--gold); border: 1px solid rgba(212,168,67,0.3); }
+  .obj-info { flex: 1; min-width: 0; }
+  .obj-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .obj-condition { font-size: 11px; color: var(--dim); line-height: 1.4; }
+  .obj-right { flex-shrink: 0; text-align: right; }
+  .obj-progress { font-family: var(--font-mono); font-size: 10px; color: var(--dim); }
+  .obj-scored-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; color: var(--green); }
+  #obj-empty { font-size: 12px; color: var(--dim); font-style: italic; padding: 4px 0; }
+
+  /* ── Phase Tutorial Cards ── */
+  .entry.tutorial { border-color: rgba(74,158,255,0.25); background: rgba(74,158,255,0.03); }
+  .entry.tutorial .entry-head { border-color: rgba(74,158,255,0.2); cursor: pointer; user-select: none; }
+  .entry.tutorial .entry-icon, .entry.tutorial .entry-who { color: var(--blue); }
+  .tutorial-toggle { margin-left: auto; font-size: 10px; color: var(--dim); }
+  .tutorial-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .tutorial-body.collapsed { display: none; }
+  .tutorial-intro { font-size: 13px; font-style: italic; color: var(--dim); line-height: 1.55; }
+  .tutorial-point { font-size: 13px; line-height: 1.55; padding: 8px 10px 8px 12px; border-left: 2px solid rgba(74,158,255,0.3); background: rgba(74,158,255,0.03); border-radius: 0 4px 4px 0; }
+  .tutorial-point strong { color: var(--text); }
+  .tutorial-dismiss {
+    align-self: flex-start; margin-top: 4px;
+    background: none; border: 1px solid rgba(74,158,255,0.3); color: var(--blue);
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+    padding: 5px 12px; border-radius: 3px; cursor: pointer;
+  }
+  .tutorial-dismiss:hover { background: rgba(74,158,255,0.08); border-color: var(--blue); }
+
+  /* ── In-line Game Term Tooltips ── */
+  .game-term {
+    border-bottom: 1px dotted rgba(74,158,255,0.5);
+    cursor: help;
+    position: relative;
+  }
+  .game-term::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    background: #060c1a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+    padding: 7px 10px;
+    border-radius: 5px;
+    width: max-content;
+    max-width: 280px;
+    white-space: pre-line;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    text-align: left;
+    font-style: normal;
+  }
+  .game-term:hover::after { opacity: 1; }
+
+  /* ── Rules Reference Panel ── */
+  #rules-panel {
+    flex-shrink: 0;
+    border-top: 2px solid var(--blue);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    overflow: hidden;
+  }
+  #rules-panel.hidden { display: none; }
+  #rules-panel-header {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 14px; border-bottom: 1px solid var(--border);
+  }
+  #rules-panel-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue); }
+  #rules-panel-close { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 14px; padding: 0 4px; line-height: 1; }
+  #rules-panel-close:hover { color: var(--text); }
+  #rules-input-row {
+    flex-shrink: 0; display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border);
+  }
+  #rules-input {
+    flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 10px; color: var(--text); font-family: var(--font-body);
+    font-size: 13px; outline: none;
+  }
+  #rules-input:focus { border-color: rgba(74,158,255,0.5); }
+  #rules-input::placeholder { color: var(--dim); }
+  #rules-ask-btn {
+    flex-shrink: 0; font-family: var(--font-title); font-size: 10px; letter-spacing: 0.06em;
+    background: var(--blue); color: #fff; border: none; border-radius: 6px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  #rules-ask-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #rules-answer {
+    flex: 1; overflow-y: auto; padding: 12px 14px;
+    font-size: 13px; line-height: 1.65; color: var(--text);
+  }
+  #rules-answer p { margin-bottom: 0.5em; }
+  #rules-answer p:last-child { margin-bottom: 0; }
+  #rules-answer h4 { font-family: var(--font-title); font-size: 11px; letter-spacing: 0.08em; margin: 0.75em 0 0.25em; color: var(--dim); text-transform: uppercase; display: block; }
+  #rules-answer strong { color: var(--text); font-weight: 600; }
+  #rules-answer::-webkit-scrollbar { width: 4px; }
+  #rules-answer::-webkit-scrollbar-track { background: transparent; }
+  #rules-answer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Rules toggle button in input bar */
+  #rules-btn {
+    flex-shrink: 0; width: 36px; height: 44px;
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--dim); font-size: 16px; cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #rules-btn:hover, #rules-btn.active { border-color: var(--blue); color: var(--blue); }
+
+  /* Scrollbars */
+  #log::-webkit-scrollbar, #coach-body::-webkit-scrollbar { width: 4px; }
+  #log::-webkit-scrollbar-track, #coach-body::-webkit-scrollbar-track { background: transparent; }
+  #log::-webkit-scrollbar-thumb, #coach-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Faction Advisor Quiz Modal ── */
+  #quiz-modal { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; }
+  #quiz-modal.hidden { display: none; }
+  #quiz-backdrop { position: absolute; inset: 0; background: rgba(5,8,16,0.92); }
+  #quiz-inner {
+    position: relative; width: 620px; max-width: calc(100vw - 32px); max-height: calc(100vh - 48px);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #quiz-header {
+    flex-shrink: 0; padding: 18px 24px 14px; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  #quiz-modal-title {
+    font-family: var(--font-title); font-size: 11px; letter-spacing: 0.14em;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 10px;
+  }
+  #quiz-progress-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  #quiz-progress-bar { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.35s ease; }
+  #quiz-body { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 28px 20px; }
+  #quiz-body::-webkit-scrollbar { width: 4px; }
+  #quiz-body::-webkit-scrollbar-track { background: transparent; }
+  #quiz-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  #quiz-footer {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; border-top: 1px solid var(--border); gap: 10px;
+  }
+
+  /* Intro page */
+  .quiz-intro-icon { font-size: 36px; text-align: center; color: var(--gold); margin-bottom: 14px; opacity: 0.7; }
+  .quiz-intro-title {
+    font-family: var(--font-title); font-size: 22px; letter-spacing: 0.1em;
+    color: var(--gold); text-transform: uppercase; text-align: center; margin-bottom: 18px;
+  }
+  .quiz-intro-lore { font-size: 14px; line-height: 1.75; color: var(--text); max-width: 480px; margin: 0 auto; text-align: center; }
+  .quiz-intro-lore p { margin-bottom: 1em; }
+  .quiz-intro-lore p:last-child { margin-bottom: 0; }
+  .quiz-intro-lore strong { color: var(--gold); font-weight: 600; }
+
+  /* Question page */
+  .quiz-q-num { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
+  .quiz-q-text { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 20px; line-height: 1.4; }
+  .quiz-options { display: flex; flex-direction: column; gap: 9px; }
+  .quiz-opt {
+    display: flex; align-items: flex-start; gap: 14px; padding: 13px 16px;
+    border: 1px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.02);
+    cursor: pointer; text-align: left; width: 100%; transition: border-color 0.12s, background 0.12s;
+  }
+  .quiz-opt:hover { border-color: rgba(212,168,67,0.4); background: rgba(212,168,67,0.04); }
+  .quiz-opt.selected { border-color: var(--gold); background: rgba(212,168,67,0.08); }
+  .quiz-opt-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; line-height: 1; }
+  .quiz-opt-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .quiz-opt.selected .quiz-opt-label { color: var(--gold); }
+  .quiz-opt-desc { font-size: 12px; color: var(--dim); line-height: 1.45; }
+
+  /* Results page */
+  .quiz-results-intro { font-size: 13px; color: var(--dim); margin-bottom: 18px; line-height: 1.5; }
+  .quiz-results-intro strong { color: var(--gold); }
+  .quiz-result-card {
+    border: 1px solid var(--border); border-radius: 7px; padding: 16px 18px;
+    margin-bottom: 10px; cursor: pointer; transition: border-color 0.12s, background 0.12s;
+    background: rgba(255,255,255,0.02);
+  }
+  .quiz-result-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.15); }
+  .quiz-result-card.top { border-color: rgba(212,168,67,0.4); background: rgba(212,168,67,0.05); }
+  .quiz-result-card.top:hover { background: rgba(212,168,67,0.09); border-color: var(--gold); }
+  .quiz-result-rank { font-family: var(--font-mono); font-size: 9px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .quiz-result-rank.gold { color: var(--gold); }
+  .quiz-result-name { font-family: var(--font-title); font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .quiz-result-why { font-size: 12px; color: var(--dim); line-height: 1.55; margin-bottom: 10px; }
+  .quiz-result-select-btn {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 3px; cursor: pointer;
+    background: none; border: 1px solid var(--border); color: var(--dim); transition: all 0.12s;
+  }
+  .quiz-result-card.top .quiz-result-select-btn { border-color: rgba(212,168,67,0.5); color: var(--gold); }
+  .quiz-result-card:hover .quiz-result-select-btn { border-color: var(--dim); color: var(--text); }
+  .quiz-result-card.top:hover .quiz-result-select-btn { border-color: var(--gold); background: rgba(212,168,67,0.1); }
+
+  /* Quiz nav buttons */
+  .quiz-nav-btn {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em;
+    padding: 8px 20px; border-radius: 4px; cursor: pointer; transition: all 0.12s;
+  }
+  .quiz-nav-btn.secondary { background: none; border: 1px solid var(--border); color: var(--dim); }
+  .quiz-nav-btn.secondary:hover { color: var(--text); border-color: var(--dim); }
+  .quiz-nav-btn.primary { background: rgba(212,168,67,0.1); border: 1px solid rgba(212,168,67,0.45); color: var(--gold); }
+  .quiz-nav-btn.primary:hover { background: rgba(212,168,67,0.18); border-color: var(--gold); }
+  .quiz-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  #galaxy-svg { flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; }
+  #galaxy-svg:hover { opacity: 0.75; }
+  #map-btn {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+    padding: 4px 8px; border-radius: 4px; cursor: pointer;
+    background: rgba(74,85,112,0.15); border: 1px solid rgba(74,85,112,0.4); color: var(--dim);
+    transition: all 0.15s;
+  }
+  #map-btn:hover { color: var(--text); border-color: var(--dim); }
+  #map-modal { position: fixed; inset: 0; z-index: 600; pointer-events: none; }
+  #map-modal.hidden #map-backdrop { opacity: 0; }
+  #map-modal.hidden #map-inner { transform: translateX(100%); }
+  #map-modal.hidden { pointer-events: none; }
+  #map-modal:not(.hidden) { pointer-events: auto; }
+  #map-backdrop { position: absolute; inset: 0; background: rgba(3,5,8,0.72); opacity: 1; transition: opacity 0.25s ease; }
+  #map-inner { position: absolute; top: 0; right: 0; bottom: 0; width: min(92vw, 1200px); background: #06090f; border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transform: translateX(0); transition: transform 0.28s cubic-bezier(0.22,1,0.36,1); }
+  #map-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  #map-title { font-family: var(--font-title); font-size: 14px; letter-spacing: 0.12em; color: var(--gold); }
+  #map-legend { display: flex; gap: 14px; font-family: var(--font-mono); font-size: 9px; color: var(--dim); align-items: center; }
+  .map-legend-dot { width: 8px; height: 8px; border-radius: 1px; display: inline-block; margin-right: 3px; }
+  #map-close-btn { background: none; border: 1px solid var(--border); color: var(--dim); cursor: pointer; font-size: 14px; line-height: 1; padding: 4px 10px; border-radius: 4px; font-family: var(--font-mono); letter-spacing: 0.05em; }
+  #map-close-btn:hover { color: var(--text); border-color: var(--dim); }
+  #map-svg-container { overflow: hidden; flex: 1; min-height: 0; position: relative; cursor: grab; user-select: none; }
+  #map-svg-container.dragging { cursor: grabbing; }
+  #map-transform-wrapper { transform-origin: 0 0; will-change: transform; display: inline-block; padding: 20px; }
+  #map-zoom-controls { position: absolute; bottom: 16px; right: 16px; display: flex; gap: 5px; align-items: center; z-index: 10; }
+  .map-zoom-btn { background: rgba(6,9,16,0.9); border: 1px solid var(--border); color: var(--dim); cursor: pointer; width: 30px; height: 30px; border-radius: 4px; font-size: 16px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .map-zoom-btn:hover { color: var(--text); border-color: var(--dim); }
+  #map-zoom-level { background: rgba(6,9,16,0.9); border: 1px solid var(--border); color: var(--dim); font-family: var(--font-mono); font-size: 10px; padding: 0 9px; height: 30px; border-radius: 4px; display: flex; align-items: center; min-width: 46px; justify-content: center; }
+  #map-changes-badge { font-family: var(--font-mono); font-size: 9px; color: #c8b870; border: 1px solid rgba(200,184,112,0.4); border-radius: 4px; padding: 2px 7px; display: none; align-items: center; gap: 4px; }
+  #map-changes-badge.visible { display: flex; }
+  #map-empty-msg { padding: 48px; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--dim); position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+
+  /* Tile tooltip */
+  #tile-tooltip { position: fixed; z-index: 800; pointer-events: none; display: none; background: rgba(6,9,16,0.97); border: 1px solid var(--border); border-radius: 6px; padding: 10px 13px; max-width: 230px; font-family: var(--font-mono); font-size: 11px; color: var(--text); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+  .tt-name { font-family: var(--font-title); font-size: 12px; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 7px; }
+  .tt-name.mecatol { color: #9b5de5; }
+  .tt-name.anomaly { color: #c04040; }
+  .tt-name.wormhole { color: #7070e0; }
+  .tt-planet-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 2px 0; }
+  .tt-planet-name { color: var(--dim); font-size: 10px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tt-planet-ri { color: var(--text); font-size: 10px; white-space: nowrap; }
+  .tt-divider { border-top: 1px solid var(--border); margin: 7px 0 6px; }
+  .tt-tag { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-right: 4px; margin-bottom: 3px; }
+  .tt-tag.anomaly { background: rgba(192,64,64,0.2); border: 1px solid rgba(192,64,64,0.4); color: #c08080; }
+  .tt-tag.wormhole { background: rgba(112,112,224,0.15); border: 1px solid rgba(112,112,224,0.4); color: #9090d0; }
+  .tt-tag.ctrl { background: rgba(212,168,67,0.12); border: 1px solid rgba(212,168,67,0.35); color: var(--gold); }
+  .tt-tag.ships { background: rgba(74,85,112,0.2); border: 1px solid rgba(74,85,112,0.4); color: #8090a0; }
+  .tt-hint { font-size: 9px; color: var(--dim); margin-top: 6px; opacity: 0.6; }
+
+  /* Tile detail panel */
+  #tile-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 230px; background: rgba(6,9,16,0.97); border-left: 1px solid var(--border); z-index: 20; transform: translateX(100%); transition: transform 0.18s ease; overflow-y: auto; display: flex; flex-direction: column; }
+  #tile-panel.open { transform: translateX(0); }
+  #tile-panel::-webkit-scrollbar { width: 3px; }
+  .tp-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 12px 12px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tp-name { font-family: var(--font-title); font-size: 13px; letter-spacing: 0.08em; color: var(--gold); flex: 1; }
+  .tp-name.mecatol { color: #9b5de5; }
+  .tp-name.anomaly { color: #c04040; }
+  .tp-close { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 16px; padding: 0; line-height: 1; flex-shrink: 0; }
+  .tp-close:hover { color: var(--text); }
+  .tp-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); padding: 10px 12px 4px; }
+  .tp-planet { padding: 4px 12px; border-bottom: 1px solid rgba(30,34,64,0.5); }
+  .tp-planet-name { font-size: 11px; color: var(--text); margin-bottom: 2px; }
+  .tp-planet-ri { font-size: 12px; font-family: var(--font-mono); }
+  .tp-ri-res { color: #e8a060; }
+  .tp-ri-inf { color: #60a0e0; }
+  .tp-planet-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .tp-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; }
+  .tp-badge.industrial { background: rgba(100,160,60,0.15); border: 1px solid rgba(100,160,60,0.35); color: #80b060; }
+  .tp-badge.cultural { background: rgba(80,120,200,0.15); border: 1px solid rgba(80,120,200,0.35); color: #80a0d0; }
+  .tp-badge.hazardous { background: rgba(200,80,60,0.15); border: 1px solid rgba(200,80,60,0.35); color: #d08070; }
+  .tp-badge.tech-r { background: rgba(200,60,60,0.15); border: 1px solid rgba(200,60,60,0.4); color: #d08080; }
+  .tp-badge.tech-b { background: rgba(60,100,200,0.15); border: 1px solid rgba(60,100,200,0.4); color: #80a0d0; }
+  .tp-badge.tech-g { background: rgba(60,160,80,0.15); border: 1px solid rgba(60,160,80,0.4); color: #80c080; }
+  .tp-badge.tech-y { background: rgba(200,160,40,0.15); border: 1px solid rgba(200,160,40,0.4); color: #d0b060; }
+  .tp-total { padding: 6px 12px 2px; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+  .tp-note { padding: 4px 12px 10px; font-size: 11px; color: var(--text); line-height: 1.5; opacity: 0.85; }
+  .tp-value-dots { display: flex; gap: 3px; padding: 4px 12px 8px; }
+  .tp-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .tp-dot.filled { background: var(--gold); }
+  .tp-dot.empty { background: rgba(212,168,67,0.15); border: 1px solid rgba(212,168,67,0.3); }
+  .tp-status-row { display: flex; align-items: center; gap: 6px; padding: 3px 12px; font-size: 11px; }
+  .tp-status-label { color: var(--dim); font-size: 10px; min-width: 60px; }
+  .tp-status-val { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     FACTION SELECTION SCREEN
+══════════════════════════════════════════════ -->
+<div id="faction-screen">
+  <div id="fs-header">
+    <div id="fs-header-top">
+      <div>
+        <div id="fs-title">Choose Your Faction</div>
+        <div id="fs-subtitle">Select a faction to command. Read the guide on the right before deciding — each plays completely differently.</div>
+      </div>
+      <button id="quiz-open-btn" onclick="openQuiz()">🎯 Help Me Choose</button>
+    </div>
+  </div>
+
+  <div id="fs-body">
+    <!-- Faction List -->
+    <div id="fs-list">
+      <!-- populated by JS -->
+    </div>
+
+    <!-- Detail Panel -->
+    <div id="fs-detail">
+      <div id="fs-detail-empty">
+        <div class="empty-icon">⬡</div>
+        <p>Select a faction to see its guide — playstyle, strengths, weaknesses, and strategy tips.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="fs-footer">
+    <div id="fs-selected-label">No faction selected</div>
+    <button id="fs-start-btn" disabled>Choose Faction</button>
+  </div>
+</div>
+
+<!-- ── Faction Advisor Quiz Modal ── -->
+<div id="quiz-modal" class="hidden">
+  <div id="quiz-backdrop" onclick="closeQuiz()"></div>
+  <div id="quiz-inner">
+    <div id="quiz-header">
+      <div id="quiz-modal-title">Faction Advisor</div>
+      <div id="quiz-progress-track"><div id="quiz-progress-bar" style="width:0%"></div></div>
+    </div>
+    <div id="quiz-body"></div>
+    <div id="quiz-footer"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     GAME SCREEN
+══════════════════════════════════════════════ -->
+<div id="map-modal" class="hidden">
+  <div id="map-backdrop" onclick="closeMapModal()"></div>
+  <div id="map-inner">
+    <div id="map-header">
+      <div id="map-title">GALAXY MAP</div>
+      <div id="map-legend">
+        <span><span class="map-legend-dot" style="background:#1a0832;border:1px solid #6b2fa0"></span>Mecatol</span>
+        <span><span class="map-legend-dot" style="background:#080d1a;border:1px solid #d4a843"></span>Home</span>
+        <span><span class="map-legend-dot" style="background:#0a1428;border:1px solid #2a5070"></span>System</span>
+        <span><span class="map-legend-dot" style="background:#0a0a1f;border:1px solid #2a2a6a"></span>Wormhole</span>
+        <span><span class="map-legend-dot" style="background:#1a0a00;border:1px solid #7a2020"></span>Anomaly</span>
+        <span id="map-changes-badge">★ <span id="map-changes-count">0</span> changed</span>
+      </div>
+      <button id="map-close-btn" onclick="closeMapModal()">ESC ✕</button>
+    </div>
+    <div id="map-svg-container">
+      <div id="map-transform-wrapper"></div>
+      <div id="tile-panel">
+        <div class="tp-header">
+          <div class="tp-name" id="tp-name"></div>
+          <button class="tp-close" onclick="closeTilePanel()">✕</button>
+        </div>
+        <div id="tp-body"></div>
+      </div>
+      <div id="map-zoom-controls">
+        <button class="map-zoom-btn" onclick="mapZoomStep(1.25)" title="Zoom in">+</button>
+        <div id="map-zoom-level">100%</div>
+        <button class="map-zoom-btn" onclick="mapZoomStep(0.8)" title="Zoom out">−</button>
+        <button class="map-zoom-btn" onclick="mapZoomReset()" title="Reset view">⟳</button>
+      </div>
+      <div id="map-empty-msg">Start a game to generate the galaxy map.<br><span style="font-size:10px;opacity:0.5">The LLM generates the board on first response.</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="game-screen" class="hidden">
+<div id="app">
+
+  <div id="phase-strip">
+    <div class="phase-tab active" data-phase="strategy">STRATEGY</div>
+    <div class="phase-tab" data-phase="action">ACTION</div>
+    <div class="phase-tab" data-phase="status">STATUS</div>
+    <div class="phase-tab" data-phase="agenda">AGENDA</div>
+  </div>
+
+  <div id="main-layout">
+
+    <div id="sidebar">
+
+      <div id="sidebar-header">
+        <svg id="galaxy-svg" width="160" height="80" viewBox="0 0 160 80" onclick="openMapModal()" title="Click to open galaxy map">
+          <polygon id="hex-mecatol" points="80,12 97,22 97,42 80,52 63,42 63,22" fill="#0d0820" stroke="#6b2fa0" stroke-width="1.5"/>
+          <text x="80" y="35" text-anchor="middle" font-family="IBM Plex Mono" font-size="7" fill="#9b5de5" letter-spacing="0.05em">MECATOL</text>
+          <polygon id="hex-player" points="80,54 97,64 97,80 80,80 63,80 63,64" fill="#0a1020" stroke="#d4a843" stroke-width="1.5"/>
+          <text id="hex-player-label" x="80" y="71" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#d4a843" font-weight="bold">SOL</text>
+          <polygon id="hex-opp1" points="44,12 61,22 61,42 44,52 27,42 27,22" fill="#0d1628" stroke="#4a5570" stroke-width="1"/>
+          <text id="hex-opp1-label" x="44" y="35" text-anchor="middle" font-family="IBM Plex Mono" font-size="7" fill="#4a5570">HAC</text>
+          <polygon id="hex-opp2" points="116,12 133,22 133,42 116,52 99,42 99,22" fill="#0d1628" stroke="#4a5570" stroke-width="1"/>
+          <text id="hex-opp2-label" x="116" y="35" text-anchor="middle" font-family="IBM Plex Mono" font-size="7" fill="#4a5570">J-N</text>
+          <polygon id="hex-opp3" points="116,54 133,64 133,80 116,80 99,80 99,64" fill="#0d1628" stroke="#4a5570" stroke-width="1"/>
+          <text id="hex-opp3-label" x="116" y="71" text-anchor="middle" font-family="IBM Plex Mono" font-size="7" fill="#4a5570">L1Z</text>
+          <polygon points="80,0 87,4 87,12 80,16 73,12 73,4" fill="#080e1a" stroke="#1e2240" stroke-width="1"/>
+          <polygon points="44,54 61,64 61,80 44,80 27,80 27,64" fill="#080e1a" stroke="#1e2240" stroke-width="1"/>
+        </svg>
+        <div id="game-header-right">
+          <div id="faction-badge">FEDERATION OF SOL</div>
+          <div id="round-badge">ROUND 1</div>
+          <div class="header-btns">
+            <button id="new-game-btn">↺ New Game</button>
+            <button id="map-btn" onclick="openMapModal()">⬡ MAP</button>
+            <button id="ref-btn">📋 REF</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="command-sheet">
+        <div id="sheet-header" onclick="toggleSheet()">
+          <span id="sheet-title">⬡ Commander Kramer</span>
+          <span id="sheet-toggle">▼</span>
+        </div>
+        <div id="sheet-body">
+          <div id="stats-row">
+            <div class="stat-cell vp" title="Victory Points — score 10 to win."><span class="stat-label">VP</span><span class="stat-value" id="stat-vp">0</span></div>
+            <div class="stat-cell" title="Trade Goods — a flexible currency spent like resources."><span class="stat-label">TG</span><span class="stat-value" id="stat-tg">0</span></div>
+            <div class="stat-cell tac" title="Tactics Command Tokens — spend to activate a system."><span class="stat-label">TAC</span><span class="stat-value" id="stat-tac">3</span></div>
+            <div class="stat-cell fleet" title="Fleet Command Tokens — limits ships per system."><span class="stat-label">FLEET</span><span class="stat-value" id="stat-fleet">3</span></div>
+            <div class="stat-cell" title="Strategy Command Tokens — spent to use strategy card secondaries."><span class="stat-label">STRAT</span><span class="stat-value" id="stat-strat">2</span></div>
+          </div>
+          <div id="planets-row"></div>
+        </div>
+      </div>
+
+      <div id="objectives-panel">
+        <div id="obj-header" onclick="toggleObjectives()">
+          <span id="obj-title">◈ Public Objectives</span>
+          <span id="obj-count"></span>
+          <span id="obj-toggle">▼</span>
+        </div>
+        <div id="obj-body">
+          <div id="obj-empty">No objectives revealed yet — they appear during Status Phase.</div>
+        </div>
+      </div>
+
+      <div id="sidebar-standings">
+        <div class="sidebar-section-hdr">Standings</div>
+        <div id="threat-bar"></div>
+      </div>
+
+    </div>
+
+    <div id="log"></div>
+
+    <div id="coach-panel">
+      <div id="coach-header">
+        <span id="coach-header-icon">◈</span>
+        <span id="coach-header-title">Your Coach</span>
+      </div>
+      <div id="coach-body"><div id="coach-empty">Awaiting your first decision…</div></div>
+    </div>
+
+  </div>
+
+  <div id="rules-panel" class="hidden">
+    <div id="rules-panel-header">
+      <span id="rules-panel-title">⟳ Rules Reference</span>
+      <button id="rules-panel-close">✕</button>
+    </div>
+    <div id="rules-input-row">
+      <input id="rules-input" type="text" placeholder="Ask any TI4 rules question — e.g. 'how does combat work?' or 'what is sustain damage?'">
+      <button id="rules-ask-btn">ASK</button>
+    </div>
+    <div id="rules-answer"><p style="color:var(--dim);font-style:italic">Ask a question above to get an instant rules reference. This doesn't affect your game.</p></div>
+  </div>
+
+  <div id="input-bar">
+    <textarea id="input-area" placeholder="Type your action or question…" rows="1"></textarea>
+    <button id="rules-btn" title="Look up a TI4 rule">?</button>
+    <button id="send-btn" onclick="sendMessage()">
+      <span class="send-icon">⬡</span>
+      <span class="send-label">ACT</span>
+    </button>
+  </div>
+
+</div>
+</div>
+
+<!-- ── Reference Modal ── -->
+<div id="ref-modal" class="hidden">
+  <div id="ref-modal-backdrop"></div>
+  <div id="ref-modal-inner">
+    <div id="ref-modal-header">
+      <div id="ref-modal-tabs">
+        <button class="ref-tab-btn active" data-tab="phases">Phase Flow</button>
+        <button class="ref-tab-btn" data-tab="combat">Combat Guide</button>
+        <button class="ref-tab-btn" data-tab="glossary">Concept Glossary</button>
+      </div>
+      <button id="ref-modal-close">✕ Close</button>
+    </div>
+    <div id="ref-modal-body">
+
+      <!-- Phase Flow Tab -->
+      <div id="ref-tab-phases" class="ref-tab-pane active">
+        <div class="ref-phases">
+          <div class="ref-phase-card">
+            <div class="ref-phase-title"><span class="ref-phase-num">1</span> Strategy Phase</div>
+            <ul>
+              <li><strong>Speaker picks first</strong>, then clockwise</li>
+              <li>Each player takes 1 of 8 strategy cards</li>
+              <li>Lower card number = earlier initiative this round</li>
+              <li><strong>Primary:</strong> yours alone · <strong>Secondary:</strong> others spend 1 STRAT CC</li>
+              <li>Unpicked cards each gain 3 Trade Goods at Status Phase</li>
+            </ul>
+          </div>
+          <div class="ref-phase-card">
+            <div class="ref-phase-title"><span class="ref-phase-num">2</span> Action Phase</div>
+            <ul>
+              <li>Players alternate in initiative order (lowest card first)</li>
+              <li><strong>Tactical:</strong> place CC, move ships, produce units</li>
+              <li><strong>Strategic:</strong> use your card's primary; others use secondary</li>
+              <li><strong>Component:</strong> play action card, tech, or [ACTION] ability</li>
+              <li><strong>Pass:</strong> once done, you're out; phase ends when all pass</li>
+            </ul>
+          </div>
+          <div class="ref-phase-card">
+            <div class="ref-phase-title"><span class="ref-phase-num">3</span> Status Phase</div>
+            <ul>
+              <li><strong>Score</strong> up to 1 public + 1 secret objective — don't forget!</li>
+              <li>Reveal next public objective card</li>
+              <li>Repair all Sustained Damage units</li>
+              <li>Return all CCs from board → pools; ready all planets</li>
+              <li>Draw action cards · Pass Speaker token clockwise</li>
+            </ul>
+          </div>
+          <div class="ref-phase-card">
+            <div class="ref-phase-title"><span class="ref-phase-num">4</span> Agenda Phase <span style="font-size:9px;color:var(--dim)">(Round 3+)</span></div>
+            <ul>
+              <li>Reveal 2 agenda cards; vote on each separately</li>
+              <li>Exhaust planets to spend their <strong>Influence</strong> as votes</li>
+              <li><strong>Laws</strong> = permanent · <strong>Directives</strong> = one-time effect</li>
+              <li>Speaker votes last and breaks all ties</li>
+              <li>Vote FOR or AGAINST each outcome — abstaining loses influence</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ref-section-title" style="margin-top:18px">Command Token Pools</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="ref-phase-card"><div class="ref-phase-title" style="color:var(--blue)">Tactics Pool</div><ul><li>Spent to activate systems (move ships + produce)</li><li>Most common spend — manage carefully</li></ul></div>
+          <div class="ref-phase-card"><div class="ref-phase-title" style="color:var(--blue)">Fleet Pool</div><ul><li>Caps non-fighter ships per system you control</li><li>Exceed limit → must remove ships immediately</li></ul></div>
+          <div class="ref-phase-card"><div class="ref-phase-title" style="color:var(--blue)">Strategy Pool</div><ul><li>Spent to use secondary abilities on others' strategy cards</li><li>Start with 2; rarely replenished mid-round</li></ul></div>
+        </div>
+      </div>
+
+      <!-- Combat Guide Tab -->
+      <div id="ref-tab-combat" class="ref-tab-pane">
+        <div class="ref-section-title">Space Combat Sequence</div>
+        <div class="ref-combat-seq">
+          <div class="ref-combat-step space"><span class="ref-step-num">1</span><div class="ref-step-body"><strong>Anti-Fighter Barrage</strong> — destroyers and some flagships fire at enemy fighters only. Target cannot return fire. <em>(If no destroyers vs fighters, skip)</em></div></div>
+          <div class="ref-combat-step space"><span class="ref-step-num">2</span><div class="ref-step-body"><strong>Space Cannon Offense</strong> — PDS units in adjacent systems fire at ships. Happens before combat begins. <em>(If no PDS in range, skip)</em></div></div>
+          <div class="ref-combat-step space"><span class="ref-step-num">3</span><div class="ref-step-body"><strong>Announce Retreat</strong> — attacker can declare intent to retreat to an adjacent system they control. <em>(Retreat executes at end of round)</em></div></div>
+          <div class="ref-combat-step space"><span class="ref-step-num">4</span><div class="ref-step-body"><strong>Combat Round</strong> (repeat until someone retreats or is destroyed):<br>a) Both players roll dice — each ship rolls once, hits on its combat value or higher<br>b) Assign hits — choose which ships take hits; Sustain Damage absorbs 1 hit without dying<br>c) Retreat resolves if announced; otherwise continue</div></div>
+        </div>
+        <div class="ref-section-title">Ground Combat (if attacker lands troops)</div>
+        <div class="ref-combat-seq">
+          <div class="ref-combat-step ground"><span class="ref-step-num">1</span><div class="ref-step-body"><strong>Bombardment</strong> — attacking dreadnoughts and war suns roll dice to destroy defending infantry and PDS. <em>(Before troops land)</em></div></div>
+          <div class="ref-combat-step ground"><span class="ref-step-num">2</span><div class="ref-step-body"><strong>Space Cannon Defense</strong> — defender's PDS fire at landing troops. <em>(If no defending PDS, skip)</em></div></div>
+          <div class="ref-combat-step ground"><span class="ref-step-num">3</span><div class="ref-step-body"><strong>Ground Combat Rounds</strong> — infantry and mechs fight. Attacker wins by eliminating all defenders. Defender wins by having 1 unit survive. Attacker must land at least 1 troop to invade.</div></div>
+        </div>
+        <div class="ref-section-title">Action Card Timing</div>
+        <div class="ref-combat-seq">
+          <div class="ref-combat-step note"><span class="ref-step-num">·</span><div class="ref-step-body"><strong>[ACTION]</strong> — play on your turn as a Component Action. Costs your entire action for the round.</div></div>
+          <div class="ref-combat-step note"><span class="ref-step-num">·</span><div class="ref-step-body"><strong>[BEFORE COMBAT]</strong> — play after ships move into a system but before any combat steps begin.</div></div>
+          <div class="ref-combat-step note"><span class="ref-step-num">·</span><div class="ref-step-body"><strong>[COMBAT ROUND START]</strong> — play at the start of any combat round, before dice are rolled.</div></div>
+          <div class="ref-combat-step note"><span class="ref-step-num">·</span><div class="ref-step-body"><strong>[AFTER COMBAT]</strong> — play after the final combat round resolves, before any post-combat steps.</div></div>
+        </div>
+      </div>
+
+      <!-- Concept Glossary Tab -->
+      <div id="ref-tab-glossary" class="ref-tab-pane">
+        <input id="glossary-search" type="text" placeholder="Search terms and definitions…">
+        <div id="glossary-list"><!-- populated by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── In-game Faction Guide Modal ── -->
+<div id="faction-modal" class="hidden">
+  <div id="faction-modal-backdrop"></div>
+  <div id="faction-modal-inner">
+    <div id="faction-modal-header">
+      <span id="faction-modal-label">Faction Guide</span>
+      <button id="faction-modal-close">✕ Close</button>
+    </div>
+    <div id="faction-modal-body">
+      <!-- populated by showFactionModal() -->
+    </div>
+  </div>
+</div>
+
+<script>
+const el = id => document.getElementById(id);
+
+// ── Faction Data (client-side, for UI display) ─────────────────────────────
+
+const FACTIONS = {
+  'Federation of Sol': {
+    abbr: 'SOL', color: '#4a9eff', difficulty: 1, pok: false,
+    tagline: "Humanity's finest. The best faction for learning TI4 — strong fundamentals, no tricks needed.",
+    homeworlds: ['Jord (4R/2I)', 'Moll Primus (2R/3I)'],
+    startingTech: ['Neural Motivator', 'Antimass Deflectors'],
+    commodities: 3,
+    ability: 'ORBITAL DROP lets you move infantry directly from carriers into invaded systems mid-combat. GENESIS lets you build a space dock anywhere you control. Both reward aggressive expansion.',
+    pros: ['Easiest to learn — mechanics are transparent', 'Strong infantry (6 to start)', 'Neural Motivator gives extra action cards', 'Excellent carrier capacity for expansion'],
+    cons: ['No flashy racial abilities to fall back on', 'Opponents can read your game plan easily', 'Relies on outplaying, not out-tricking'],
+    tip: 'Take Leadership (card 1) in Round 1. Three bonus command tokens gives you an immediate tempo advantage and pairs perfectly with your aggressive infantry strategy. Expand early and often — your carriers are built for it.'
+  },
+  'Emirates of Hacan': {
+    abbr: 'HAC', color: '#d4a843', difficulty: 2, pok: false,
+    tagline: 'Trade lords. Win the galaxy not through war, but by controlling who gets resources and who doesn\'t.',
+    homeworlds: ['Arretze (2R/0I)', 'Kamdorn (0R/1I)', 'Hercant (1R/1I)'],
+    startingTech: ['Sarween Tools', 'Quantum Datahub Node'],
+    commodities: 3,
+    ability: 'Trade without Action Cards (no one else can). Your promissory note gives another player your racial ability for a round. Negotiate freely — you are the galaxy\'s bank.',
+    pros: ['Richest faction — trade goods flow freely', 'Deals and diplomacy give political power', 'Hard to justify attacking a good trade partner', 'Sarween Tools reduces production costs immediately'],
+    cons: ['Weak military — you rely on others to fight', 'Dependent on neighbors for trade', 'You need the Trade strategy card to maximize income', 'Poor at Mecatol Rex early'],
+    tip: 'Make early trade deals with everyone. Your Quantum Datahub Node lets you share action cards for mutual benefit. Keep at least 2 neighbors friendly — you can\'t fight your way out of trouble.'
+  },
+  'Universities of Jol-Nar': {
+    abbr: 'J-N', color: '#9b5de5', difficulty: 3, pok: false,
+    tagline: 'The tech faction. Start with 4 technologies. By Round 4 you\'ll have toys no one else can counter.',
+    homeworlds: ['Jol (1R/2I)', 'Nar (2R/3I)'],
+    startingTech: ['Neural Motivator', 'Antimass Deflectors', 'Sarween Tools', 'Spec Ops II'],
+    commodities: 4,
+    ability: 'Research technology more cheaply than anyone. Draw extra action cards. ANALYTICAL lets you spend a strategy token to research. The catch: −1 to all combat rolls.',
+    pros: ['4 starting technologies — massive head start', 'Best faction in the late game', 'High commodity income (4)', 'Can research almost anything by round 4'],
+    cons: ['Combat penalty (−1) makes early fights costly', 'Resource-poor homeworlds make expansion slow', 'Punished hard if you fall behind on tech', 'Steeper learning curve than Sol'],
+    tip: 'Research aggressively in Round 1. Spec Ops II upgrades your infantry — don\'t neglect it. Pick the Technology strategy card early to stay ahead. Avoid early combat until your tech advantage compounds.'
+  },
+  'L1Z1X Mindnet': {
+    abbr: 'L1Z', color: '#e8521a', difficulty: 2, pok: false,
+    tagline: 'Pure military aggression. Upgraded dreadnoughts, assault cannons, and a flagship that instills dread.',
+    homeworlds: ['[0.0.0] (5R/0I)', 'Wellon (0R/2I)'],
+    startingTech: ['Neural Motivator', 'Antimass Deflectors'],
+    commodities: 2,
+    ability: 'HARROW: Your dreadnoughts also function as carriers (troops and ships in one). ASSIMILATE: Absorb Mecatol Rex\'s planetary card. Super-Dreadnought starts are available.',
+    pros: ['Enormous resource production ([0.0.0] = 5R)', 'Dreadnoughts that carry troops are extremely efficient', 'Strong early military presence deters aggression', 'Natural path to Mecatol Rex'],
+    cons: ['Only 2 commodities — trade income is low', 'Combat-focused can burn command tokens fast', 'Little flexibility if the military plan fails', 'Telegraphs your strategy from turn 1'],
+    tip: 'Your massive home planet funds rapid fleet production. Push toward Mecatol Rex in Round 2. Use your dreadnoughts\' carrier function to invade — 1 unit doing 2 jobs is efficient.'
+  },
+  'Barony of Letnev': {
+    abbr: 'LET', color: '#c4cedf', difficulty: 2, pok: false,
+    tagline: 'Wealthy military aristocracy. Start with a dreadnought and compensate for fewer units with economic bonuses.',
+    homeworlds: ['Arc Prime (3R/1I)', 'Wren Terra (2R/1I)'],
+    startingTech: ['Antimass Deflectors', 'Non-Euclidean Shielding'],
+    commodities: 2,
+    ability: 'MUNITIONS RESERVES: Spend 2 trade goods to produce 1 unit for free each round. ARMADA: No fleet supply limit in your home system. Non-Euclidean Shielding gives your flagship Sustain.',
+    pros: ['Start with a dreadnought — immediate military presence', 'Sustain Damage tech means units survive longer', 'Trade good production smooths out resource shortfalls', 'Strong late-game fleet building'],
+    cons: ['Low commodity count (2)', 'Fewer starting units than most factions', 'Needs economic setup before rolling', 'Combat-dependent playstyle'],
+    tip: 'Use your dreadnought to deter early aggression. Hoard trade goods for Munitions Reserves — free units add up fast. Non-Euclidean Shielding on your flagship makes it nearly unkillable.'
+  },
+  'Clan of Saar': {
+    abbr: 'SAR', color: '#4ecb71', difficulty: 2, pok: false,
+    tagline: 'Nomadic raiders. Your space docks move. Expand rapidly, strike opportunistically, never get pinned down.',
+    homeworlds: ['Lisis (1R/2I)', 'Ragh (2R/1I)'],
+    startingTech: ['Chaos Mapping', 'Neural Motivator'],
+    commodities: 3,
+    ability: 'SCAVENGE: Gain trade goods when you destroy enemy ships. NOMADIC: Your space docks can move with your fleet — production follows your expansion, not your home system.',
+    pros: ['Mobile space docks enable forward production', 'Scavenge turns combat wins into economic wins', 'Two cruisers give strong early mobility', 'Hard to lock down strategically'],
+    cons: ['Weak home system if you lose your docks', 'Chaotic playstyle is hard to plan around', 'Chaos Mapping (wormholes) requires map awareness', 'Lower influence on home planets'],
+    tip: 'Move your space dock toward the front lines by Round 2. Scavenge means every fight pays you — pick skirmishes you can win. Chaos Mapping lets you appear anywhere with a wormhole.'
+  },
+  'Naalu Collective': {
+    abbr: 'NAA', color: '#4a9eff', difficulty: 2, pok: false,
+    tagline: 'Fighter swarms and initiative control. Your "0" token means you always act first. Your fighters hit like cruisers.',
+    homeworlds: ['Nar (2R/3I)', 'Maaluul (0R/0I)'],
+    startingTech: ['Neural Motivator', 'Neuroglaive'],
+    commodities: 3,
+    ability: 'TELEPATHIC: Give any player your 0 token — they must play it, acting last. You keep initiative. FORESIGHT: Place fighters in controlled systems for free during Status Phase.',
+    pros: ['0 initiative token means you act first — always', 'Fighters grow into the best combat ships in the game', 'Free fighter placement snowballs fast', 'Strong political influence through token manipulation'],
+    cons: ['Maaluul has 0 resources and 0 influence (it\'s a trap)', 'Weak early combat before fighter upgrades', 'Depends heavily on fighter tech upgrades', 'Gift of Prescience requires political timing'],
+    tip: 'Give your 0 token to the most dangerous player to slow them down. Focus tech on fighter upgrades — Neuroglaive is your foundation. Nar gives great influence for voting.'
+  },
+  'Xxcha Kingdom': {
+    abbr: 'XXC', color: '#4ecb71', difficulty: 2, pok: false,
+    tagline: 'Political kingmakers. Cancel action cards, manipulate agendas, and score VP without winning battles.',
+    homeworlds: ['Xxcha (3R/1I)', 'Archon Ren (2R/0I)'],
+    startingTech: ['Instinct Training', 'Nullification Field'],
+    commodities: 4,
+    ability: 'QUASH: Cancel an action card before it resolves. POLITICAL FAVOR: Cancel an agenda and draw 2 action cards. Your promissory note prevents ships entering your systems.',
+    pros: ['Highest commodity income (4)', 'Agenda manipulation wins games at 8–9 VP', 'Can negate opponent action cards at critical moments', 'Great for learning political mechanics'],
+    cons: ['Weaker military than most factions', 'Dependent on Agenda Phase to close out games', 'Needs to accumulate VP through objectives, not combat', 'Punished if political strategies are countered'],
+    tip: 'Don\'t try to fight everyone. Secure objectives quietly and use your political tools to control the endgame. Nullification Field makes your planets very hard to take.'
+  },
+  'Yin Brotherhood': {
+    abbr: 'YIN', color: '#c4cedf', difficulty: 2, pok: false,
+    tagline: 'Religious zealots with conversion powers. Sacrifice ships for devastating effects. Hard to fight conventionally.',
+    homeworlds: ['Darien (4R/3I)'],
+    startingTech: ['Sarween Tools', 'Predictive Intelligence'],
+    commodities: 3,
+    ability: 'INDOCTRINATION: Spend 2 trade goods to convert an enemy infantry to yours — in any system. RECLAMATION: Your flagship can Sustain Damage. Yin promissory destroys all fighters.',
+    pros: ['Single powerful homeworld (4R/3I)', 'Conversion mechanic neutralizes enemy infantry', 'Three carriers let you project force early', 'Predictive Intelligence is a strong utility tech'],
+    cons: ['No PDS at start — vulnerable to bombardment', 'Indoctrination is expensive in trade goods', 'Weaker fleet without fighter screens early', 'Sacrificial mechanics require careful resource management'],
+    tip: 'Use Indoctrination surgically — converting troops behind enemy lines is worth 2 trade goods when it wins a key invasion. Keep trade goods flowing through Sarween Tools.'
+  },
+  'Winnu': {
+    abbr: 'WIN', color: '#9b5de5', difficulty: 3, pok: false,
+    tagline: 'Mecatol Rex specialists. Your entire game is a single-minded rush to the center. Devastating when on track.',
+    homeworlds: ['Winnu (3R/4I)'],
+    startingTech: ['Sarween Tools', '(pick any 1 tech no other faction starts with)'],
+    commodities: 3,
+    ability: 'BLOOD TIES: Score 1 extra VP during Status Phase if you control Mecatol Rex. RECLAMATION: Place a space dock on Mecatol Rex when you take it. Your flagship reduces Mecatol Rex invasion cost.',
+    pros: ['Mecatol Rex scoring is incredibly powerful when active', 'Winnu homeworld has 4 influence — massive voting power', 'Extremely focused gameplan with clear priorities', 'Can choose any starting tech — huge flexibility'],
+    cons: ['Single homeworld makes production slow', 'Weakest military of any faction', 'Entirely Mecatol Rex dependent — if blocked, you lose', 'Opponents will often coordinate to remove you from Mecatol Rex'],
+    tip: 'Beeline for Mecatol Rex through the most direct route. Take the Technology card early to get your flagship online. Blood Ties scoring + Mecatol Rex control = 2 VP per Status Phase if things go right.'
+  },
+  'Mentak Coalition': {
+    abbr: 'MEN', color: '#e8521a', difficulty: 3, pok: false,
+    tagline: 'Pirates and ambushers. Strike before combat begins. Steal trade goods. Punish passive opponents relentlessly.',
+    homeworlds: ['Moll Terminus (2R/0I)', 'Quinarra (3R/1I)'],
+    startingTech: ['Sarween Tools', 'Mirror Computing'],
+    commodities: 2,
+    ability: 'PILLAGE: After combat, steal 1 trade good from any opponent with more than 3. AMBUSH: Before space combat begins, deal 2 hits with cruisers and 1 with a destroyer — no return fire.',
+    pros: ['Ambush makes attacking you extremely costly', 'Pillage creates passive income from wealthy neighbors', 'Two cruisers = strong early naval presence', 'Mirror Computing is excellent with action cards'],
+    cons: ['Low commodities (2)', 'Ambush requires good ship positioning', 'Pillage only activates if opponent has 4+ TG', 'Aggressive playstyle burns command tokens quickly'],
+    tip: 'Position cruisers on likely invasion routes — Ambush fires before anyone else gets a shot. Sit next to trade-heavy factions (Hacan, Xxcha) to maximize Pillage income.'
+  },
+  'Nekro Virus': {
+    abbr: 'NEK', color: '#9b5de5', difficulty: 3, pok: false,
+    tagline: 'Completely unique. Steal technologies from defeated enemies. Convert fallen troops. Nothing else plays like this.',
+    homeworlds: ['Mordai II (3R/0I)'],
+    startingTech: ['Valefar Assimilator X', 'Valefar Assimilator Y'],
+    commodities: 3,
+    ability: 'PROPAGATION: When enemy units die in combat, place 1 Nekro infantry there instead. GALACTIC THREAT: When any faction researches technology, you may copy it using an Assimilator.',
+    pros: ['Two space docks at start — huge production capacity', 'Technology stealing means you never fall behind on tech', 'Propagation generates infantry from combat losses', 'Extremely fun and unpredictable to play against'],
+    cons: ['Single home planet (3R/0I) — no influence', 'Cannot use diplomacy or trade normally', 'Valefar Assimilators require planning ahead', 'Steep learning curve — the faction handbook has 6 pages of exceptions'],
+    tip: 'Pick your early Assimilator targets carefully — copy high-value techs from Jol-Nar or Letnev. Use your two space docks to flood the board with units early and often.'
+  },
+  'Embers of Muaat': {
+    abbr: 'MUA', color: '#e8521a', difficulty: 3, pok: false,
+    tagline: 'One trick: a War Sun. Build the most powerful unit in the game and use it to obliterate everything in its path.',
+    homeworlds: ['Muaat (4R/1I)'],
+    startingTech: ['Magmus Reactor', 'Plasma Scoring'],
+    commodities: 4,
+    ability: 'STAR FORGE: Once per round, produce 1 unit for free using your War Sun\'s production. UNSTABLE PLANET: Muaat can produce War Suns without extra cost. A War Sun can carry 6 fighters.',
+    pros: ['War Sun is the strongest combat unit in the game', 'High commodities (4) fund early development', 'Plasma Scoring adds hits before combat starts', 'Star Forge gives passive production income'],
+    cons: ['Everything depends on getting your War Sun operational', 'Single home planet is exposed', 'Slow to get started — War Sun takes time to build', 'A destroyed War Sun often loses the game'],
+    tip: 'Get your War Sun built before Round 3. Until then, play defensively. Once it\'s online, pick fights you can\'t lose. Plasma Scoring + War Sun shoots before anyone fires back.'
+  },
+  'Ghosts of Creuss': {
+    abbr: 'GHO', color: '#4a9eff', difficulty: 3, pok: false,
+    tagline: 'Wormhole manipulators. Reshape the galaxy\'s geography. Strike from unexpected directions. Control movement itself.',
+    homeworlds: ['Creuss (4R/2I)'],
+    startingTech: ['Wormhole Generator'],
+    commodities: 4,
+    ability: 'QUANTUM ENTANGLEMENT: All wormholes in the galaxy are adjacent to each other — only for you. SLIPSTREAM: Move through wormholes even with enemy ships present. Create wormholes with tech.',
+    pros: ['Wormhole network creates unparalleled mobility', 'High commodities (4) and a strong homeworld', 'Strike from positions opponents can\'t predict', 'Wormhole Generator tech enables strategic wormhole placement'],
+    cons: ['Home system is isolated behind a wormhole — risky if taken', 'Requires deep map awareness to use effectively', 'Complex to play well — reading the board matters more than any other faction', 'Steepest learning curve for map control'],
+    tip: 'Place wormholes near Mecatol Rex and your planned expansion zones early. Your mobility is your army — don\'t let opponents cut off your wormhole access. Map awareness is everything.'
+  },
+  'Arborec': {
+    abbr: 'ARB', color: '#4ecb71', difficulty: 3, pok: false,
+    tagline: 'Biological production. Every infantry is a space dock. Slow to start, overwhelming in the late game.',
+    homeworlds: ['Nestphar (3R/2I)'],
+    startingTech: ['Magen Defense Grid'],
+    commodities: 3,
+    ability: 'MITOSIS: During Status Phase, each of your infantry produces 1 new infantry (where they stand). AWAKEN: Your Letani Warrior II infantry also function as space docks — produce anywhere.',
+    pros: ['Late-game production is unmatched', 'Mitosis makes your infantry self-replicating', 'Magen Defense Grid: PDS fire as if they were ships', 'Strong defensive game — planets with infantry are expensive to take'],
+    cons: ['Slowest start of any faction', 'Letani Warrior II requires tech before infantry produce', 'Combat stats are ordinary — you win through attrition', 'Vulnerable to early pressure before infantry multiply'],
+    tip: 'Spread infantry across planets in Round 1 — they need to be in place before Mitosis kicks in. Research Letani Warrior II fast. Don\'t fight; let opponents exhaust themselves while you grow.'
+  },
+  "Sardakk N'orr": {
+    abbr: 'SAR', color: '#c4cedf', difficulty: 3, pok: false,
+    tagline: "Hard mode. No racial abilities. No starting tech. Just +1 to every combat roll and sheer numbers.",
+    homeworlds: ["Quinarra (3R/1I)", "Tren'lak (1R/0I)"],
+    startingTech: [],
+    commodities: 3,
+    ability: "+1 to every combat roll. That's it. No action card abilities. No racial tech. No diplomatic tools. Every other faction has something you don't. Win through fundamental excellence.",
+    pros: ['+1 combat roll is massive over a long game', 'Forces mastery of TI4 fundamentals', 'Exotrireme dreadnoughts deal damage before combat', 'Extremely satisfying when it works'],
+    cons: ['No starting technology — severely handicapped Round 1', 'No racial abilities to fall back on', 'The weakest faction in the game in most situations', 'Requires extensive TI4 experience to compete'],
+    tip: 'Not recommended for first-time players. If you choose this, accept that you\'ll lose — and learn the rules deeply. Technology is your first priority every single turn.'
+  },
+  'Nomad': {
+    abbr: 'NOM', color: '#d4a843', difficulty: 3, pok: true,
+    tagline: '(PoK) The Cavalry flagship is the best ship in the game. Copy objectives, score secrets easily, project power everywhere.',
+    homeworlds: ['Arcturus (2R/3I)'],
+    startingTech: ['Sling Relay', 'Predictive Intelligence'],
+    commodities: 4,
+    ability: 'THE CAVALRY: Your flagship counts as a scoring unit for objectives — unique in the game. FUTURE SIGHT: Copy a scored public objective. Your promissory note lets an ally score early.',
+    pros: ['Flagship is an objective-scoring engine', 'Future Sight scoring is potentially 2 VP in one move', 'High commodities (4)', 'Sling Relay enables rapid reinforcement from home'],
+    cons: ['Single home planet with modest resources', 'Flagship is expensive to build and replace', 'Complex timing windows for scoring abilities', 'Requires PoK expansion'],
+    tip: 'Build The Cavalry as soon as possible. Use Future Sight to copy the most recently scored public objective — timing matters. Sling Relay lets you reinforce the front lines without burning command tokens.'
+  },
+  'Mahact Gene-Sorcerers': {
+    abbr: 'MAH', color: '#d4a843', difficulty: 3, pok: true,
+    tagline: '(PoK) Steal command tokens from defeated enemies to fuel the largest fleet in the galaxy. The most powerful — and complex — faction.',
+    homeworlds: ['Ixth (3R/5I)'],
+    startingTech: ['Bio-Stims', 'Predictive Intelligence'],
+    commodities: 3,
+    ability: 'IMPERIA: For each unique command token on your flagship, your fleet limit increases by 1. HUBRIS: Steal command tokens when you destroy enemy flagships. Edict limits opponent command token use.',
+    pros: ['5 influence on Ixth = enormous voting power', 'Fleet limit can grow indefinitely with stolen CCs', 'Bio-Stims gives leaders a recovery ability', 'Unique flagship abilities (Edict, Imperia) are game-defining'],
+    cons: ['Complex — requires tracking multiple opponent command token pools', 'Aggressive play necessary to generate stolen CCs', 'Heavily targeted because of their power level', 'Requires PoK expansion'],
+    tip: 'Target flagships specifically — each destroyed flagship gives you a command token of their color. Imperia means your fleet cap grows with each kill. A late-game Mahact fleet is unstoppable.'
+  },
+};
+
+const TECH_TIPS = {
+  'Neural Motivator': 'Draw 2 Action Cards instead of 1 during the Status Phase.\nDoubles your hand growth rate — more options, more flexibility.',
+  'Antimass Deflectors': '+1 movement for all your ships.\nReach distant systems faster and respond to threats across the galaxy.',
+  'Sarween Tools': 'When producing units, 1 unit costs nothing extra (reduces total cost by 1).\nA permanent production discount applied to every build order.',
+  'Quantum Datahub Node': 'Share your entire Action Card hand with a trade partner once per trade.\nEnables deep diplomatic agreements — give allies the card they need.',
+  'Spec Ops II': 'Your infantry roll 2 combat dice and keep the better result in ground combat.\nDramatically improves planetary invasions.',
+  'Non-Euclidean Shielding': 'Your flagship and dreadnoughts gain Sustain Damage.\nAbsorb a hit without being destroyed — each ship can take 2 hits before dying.',
+  'Chaos Mapping': 'Your ships ignore asteroid fields. Your home system gains a wormhole,\nconnecting you to the wormhole network anywhere on the map.',
+  'Neuroglaive': 'Enemies adjacent to your systems cannot use Sustain Damage.\nRemoves the most powerful defensive ability in the game.',
+  'Instinct Training': 'Spend 1 Trade Good to cancel an Action Card played against you.\nProtection from surprise abilities at a predictable cost.',
+  'Nullification Field': 'Your planets cannot be Bombarded.\nEnemies must land troops with no orbital softening — expensive invasions.',
+  'Predictive Intelligence': 'Once per round: discard an Action Card from your hand to cancel\none Action Card played against you.',
+  'Mirror Computing': 'Spend 1 fewer Trade Good on any effect that costs Trade Goods.\nA permanent ~25% discount on all trade good expenditures.',
+  'Valefar Assimilator X': 'Nekro exclusive: when an enemy faction\'s units are destroyed, copy one of their technologies.\nSteal racial techs your opponents spent rounds researching.',
+  'Valefar Assimilator Y': 'Nekro exclusive: second technology copy slot.\nLets you simultaneously hold 2 technologies stolen from other factions.',
+  'Magmus Reactor': 'Unlocks War Sun production. Without this technology, War Suns\ncannot be built — it\'s the gate to the most powerful unit in the game.',
+  'Plasma Scoring': 'Before space combat begins, your ships deal 1 automatic hit.\nThe opponent cannot return fire against it — free damage every fight.',
+  'Wormhole Generator': 'Place or move an alpha or beta wormhole token on the map.\nReshape the galaxy\'s movement network to benefit your ships.',
+  'Magen Defense Grid': 'Your PDS units fire at enemy ships during Space Cannon Offense.\nTreated like combat ships — extra long-range firepower.',
+  'Sling Relay': 'Once per action, produce units at a space dock adjacent to an activated system.\nExtend your production range far from your home system.',
+  'Bio-Stims': 'Exhaust to ready an exhausted card (planet, agent, etc.).\nAccelerates recovery and can double certain leader abilities.',
+  '(pick any 1 tech no other faction starts with)': 'Winnu special: choose any starting technology not held by another faction.\nPick something that complements your path to Mecatol Rex.',
+};
+
+const FACTION_GROUPS = [
+  { label: '⭐ Beginner',     difficulty: 1, keys: ['Federation of Sol'] },
+  { label: '⭐⭐ Intermediate', difficulty: 2, keys: ['Emirates of Hacan','L1Z1X Mindnet','Barony of Letnev','Clan of Saar','Naalu Collective','Xxcha Kingdom','Yin Brotherhood'] },
+  { label: '⭐⭐⭐ Advanced',    difficulty: 3, keys: ["Universities of Jol-Nar",'Mentak Coalition','Winnu','Nekro Virus','Embers of Muaat','Ghosts of Creuss','Arborec',"Sardakk N'orr",'Nomad','Mahact Gene-Sorcerers'] },
+];
+
+// ── Faction Selection UI ───────────────────────────────────────────────────────
+
+let selectedFaction = null;
+
+function buildFactionList() {
+  const list = el('fs-list');
+  list.innerHTML = '';
+  FACTION_GROUPS.forEach(group => {
+    const label = document.createElement('div');
+    label.className = 'fs-group-label';
+    label.textContent = group.label;
+    list.appendChild(label);
+
+    group.keys.forEach(key => {
+      const f = FACTIONS[key];
+      if (!f) return;
+      const row = document.createElement('div');
+      row.className = 'fs-faction-row';
+      row.dataset.faction = key;
+
+      const dots = Array(3).fill(0).map((_, i) =>
+        `<div class="fs-dot ${i < f.difficulty ? 'filled' : ''}"></div>`
+      ).join('');
+
+      row.innerHTML = `
+        <div class="fs-faction-color" style="background:${f.color}"></div>
+        <div class="fs-faction-name">${key}</div>
+        <div class="fs-difficulty">${dots}</div>
+        ${f.pok ? '<div class="fs-pok-badge">POK</div>' : ''}
+      `;
+      row.addEventListener('click', () => selectFaction(key, row));
+      list.appendChild(row);
+    });
+  });
+}
+
+function selectFaction(key, rowEl) {
+  selectedFaction = key;
+  document.querySelectorAll('.fs-faction-row').forEach(r => r.classList.remove('selected'));
+  (rowEl || document.querySelector(`.fs-faction-row[data-faction="${key}"]`))?.classList.add('selected');
+
+  el('fs-selected-label').innerHTML = `Playing as: <span>${key}</span>`;
+  el('fs-start-btn').disabled = false;
+
+  renderFactionDetail(key);
+}
+
+function tipIcon(text) {
+  return `<span class="tip-icon" data-tip="${escapeHtml(text)}">i</span>`;
+}
+
+function renderFactionDetail(key, container) {
+  const f = FACTIONS[key];
+  const detail = container || el('fs-detail');
+
+  const techHtml = f.startingTech.length
+    ? f.startingTech.map(t => {
+        const tip = TECH_TIPS[t];
+        return `<div class="fs-tech-chip"${tip ? ` data-tip="${escapeHtml(tip)}"` : ''}>${escapeHtml(t)}</div>`;
+      }).join('')
+    : '<span class="fs-tech-none">None — you start with no technologies</span>';
+
+  const planetHtml = f.homeworlds.map(p => {
+    const m = p.match(/\((\d+)R\/(\d+)I\)/);
+    const tip = m ? `${m[1]} Resources (spent to produce units)\n${m[2]} Influence (spent for tech research and voting)` : null;
+    return `<div class="fs-planet-chip"${tip ? ` data-tip="${escapeHtml(tip)}"` : ''}>${escapeHtml(p)}</div>`;
+  }).join('');
+
+  const prosHtml = f.pros.map(p => `<li>${escapeHtml(p)}</li>`).join('');
+  const consHtml = f.cons.map(c => `<li>${escapeHtml(c)}</li>`).join('');
+
+  const diffPips = Array(3).fill(0).map((_, i) =>
+    `<div class="diff-pip ${i < f.difficulty ? 'on' : ''}"></div>`
+  ).join('');
+
+  const diffLabels = ['', 'Beginner — straightforward mechanics, good for learning', 'Intermediate — some complexity, rewards experience', 'Advanced — unique mechanics that require deep game knowledge'];
+
+  detail.innerHTML = `
+    <div id="fs-faction-heading">
+      <div id="fs-faction-title">${escapeHtml(key)}</div>
+      <div id="fs-faction-diff">
+        <span id="fs-faction-diff-label" title="${escapeHtml(diffLabels[f.difficulty])}">Difficulty</span>
+        ${diffPips}
+        ${f.pok ? `<div class="fs-pok-badge" style="margin-left:6px" title="Requires the Prophecy of Kings expansion (not in the base game)">PoK</div>` : ''}
+      </div>
+    </div>
+
+    <div id="fs-faction-tagline">${escapeHtml(f.tagline)}</div>
+
+    <div>
+      <div class="fs-section-title" style="display:flex;align-items:center">
+        Home Planets
+        ${tipIcon('Resources (R) fuel unit production — spent to build ships and ground forces.\nInfluence (I) fuels technology research and political voting.\nHover each planet chip to see its values.')}
+        <span style="margin-left:auto;opacity:0.7">Commodities: ${f.commodities} ${tipIcon('Each trade round, you exchange commodities for trade goods with allies.\nTrade goods are spent like resources. More commodities = more income per deal.')}</span>
+      </div>
+      <div class="fs-homeworld-row">${planetHtml}</div>
+    </div>
+
+    <div>
+      <div class="fs-section-title" style="display:flex;align-items:center">
+        Starting Technologies
+        ${tipIcon('Technologies are permanent upgrades that give your faction advantages.\nResearching more costs resources + influence. Most factions start with 1–2.\nHover each tech chip to see what it does.')}
+      </div>
+      <div class="fs-tech-row">${techHtml}</div>
+    </div>
+
+    <div>
+      <div class="fs-section-title" style="display:flex;align-items:center">
+        Key Abilities
+        ${tipIcon('Racial abilities are unique to your faction — no one else can do these.\nThey define your playstyle and long-term strategy.')}
+      </div>
+      <div class="fs-ability-box">${escapeHtml(f.ability)}</div>
+    </div>
+
+    <div>
+      <div class="fs-section-title">Strengths &amp; Weaknesses</div>
+      <div class="fs-pros-cons">
+        <div class="fs-pros">
+          <div class="fs-pros-title">Strengths</div>
+          <ul>${prosHtml}</ul>
+        </div>
+        <div class="fs-cons">
+          <div class="fs-cons-title">Weaknesses</div>
+          <ul>${consHtml}</ul>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="fs-section-title" style="display:flex;align-items:center">
+        Round 1 Strategy Tip
+        ${tipIcon('TI4 rounds are long. Round 1 decisions set up your next 2–3 rounds,\nso your very first moves matter more than they appear.')}
+      </div>
+      <div class="fs-tip-box">${escapeHtml(f.tip)}</div>
+    </div>
+  `;
+}
+
+// ── Faction Advisor Quiz ──────────────────────────────────────────────────────
+
+const QUIZ_QUESTIONS = [
+  {
+    q: 'What role do you want to play in the galaxy?',
+    options: [
+      { label: 'Conqueror', icon: '⚔️', desc: 'Build fleets, take systems, and crush anyone who stands in your path.', scores: { warrior: 3 } },
+      { label: 'Merchant', icon: '💰', desc: 'Grow rich through trade, forge alliances, and buy your way to victory.', scores: { merchant: 3 } },
+      { label: 'Innovator', icon: '🔬', desc: 'Research cutting-edge technology and out-think the entire galaxy.', scores: { sage: 3 } },
+      { label: 'Diplomat', icon: '🕊️', desc: 'Control politics, forge deals, and win without ever firing a shot.', scores: { diplomat: 3 } },
+    ]
+  },
+  {
+    q: 'How do you prefer to win?',
+    options: [
+      { label: 'Boldly', icon: '🏆', desc: "Big moves and dramatic battles — everyone knows I'm winning.", scores: { warrior: 2 } },
+      { label: 'Quietly', icon: '🕵️', desc: 'Score objectives under the radar while others fight each other.', scores: { sage: 1, diplomat: 2 } },
+      { label: 'Uniquely', icon: '⚡', desc: 'Exploit a special faction ability nobody else has access to.', scores: { sage: 2 } },
+      { label: 'Adaptively', icon: '🎯', desc: 'No fixed plan — react to the board and maximize every opportunity.', scores: { merchant: 1, diplomat: 1 } },
+    ]
+  },
+  {
+    q: 'How complex do you want your faction to be?',
+    options: [
+      { label: 'Simple', icon: '✨', desc: 'Clean abilities, focus on strategy and positioning — not reading special rules.', complexity: 1 },
+      { label: 'Moderate', icon: '⚙️', desc: 'A few unique twists that change my playstyle without overwhelming me.', complexity: 3 },
+      { label: 'Complex', icon: '🌀', desc: 'Interlocking systems and hidden depths — I want a puzzle to master.', complexity: 5 },
+    ]
+  },
+  {
+    q: 'When a fight breaks out, what do you do?',
+    options: [
+      { label: 'Overwhelm', icon: '🚀', desc: 'More ships, bigger guns — win by sheer production and force of numbers.', scores: { warrior: 2 } },
+      { label: 'Surprise', icon: '🎭', desc: "Use abilities opponents don't see coming — keep them permanently off-balance.", scores: { sage: 2 } },
+      { label: 'Fortify', icon: '🛡️', desc: 'Dig in and hold strong positions — let enemies bleed trying to attack me.', scores: { warrior: 1, diplomat: 1 } },
+      { label: 'Avoid it', icon: '🕊️', desc: 'Fight only when necessary — I prefer negotiation, stealth, or letting others war.', scores: { merchant: 2, diplomat: 2 } },
+    ]
+  },
+  {
+    q: 'Which civilization speaks to you most?',
+    options: [
+      { label: 'Ancient Empire', icon: '👑', desc: 'A once-great dynasty reclaiming its rightful throne at the center of the galaxy.', scores: { warrior: 1, diplomat: 2 } },
+      { label: 'Science Collective', icon: '🤖', desc: 'Advanced researchers who out-tech every problem through superior knowledge.', scores: { sage: 3 } },
+      { label: 'Warrior Culture', icon: '⚔️', desc: 'A species born for battle — conquest and glory are in their blood.', scores: { warrior: 3 } },
+      { label: 'Mysterious Aliens', icon: '🌌', desc: 'Beings with powers others barely comprehend — strange and unpredictable.', scores: { sage: 2, diplomat: 1 } },
+      { label: 'Master Traders', icon: '💼', desc: 'Sophisticated merchants who dominate through economic control and diplomacy.', scores: { merchant: 3 } },
+    ]
+  }
+];
+
+const FACTION_ARCHETYPES = {
+  'Federation of Sol':        { warrior:4, merchant:2, sage:1, diplomat:2, complexity:1, why: 'Straightforward military expansion with excellent carrier capacity. The best faction to learn the game — no tricks, just solid fundamentals that reward good play.' },
+  'Emirates of Hacan':        { warrior:1, merchant:5, sage:2, diplomat:3, complexity:2, why: "The galaxy's supreme traders. Control the economy, forge alliances, and buy your way to victory while others exhaust themselves fighting." },
+  'L1Z1X Mindnet':            { warrior:5, merchant:1, sage:2, diplomat:1, complexity:2, why: 'Cybernetic conquerors built for pure war. A 5-resource home planet funds rapid production, and dreadnoughts that carry troops make for devastating aggression.' },
+  'Barony of Letnev':         { warrior:4, merchant:2, sage:3, diplomat:1, complexity:2, why: 'Industrial warmongers with exceptional firepower. Munitions Reserves keep you fighting longer; a starting dreadnought projects immediate strength.' },
+  'Clan of Saar':             { warrior:3, merchant:2, sage:2, diplomat:2, complexity:3, why: 'Nomadic raiders who never sit still. Your ability to move space docks makes you nearly impossible to pin down and permanently threatening.' },
+  'Naalu Collective':         { warrior:2, merchant:2, sage:3, diplomat:4, complexity:4, why: 'Mind-controlling serpents with powerful political abilities. You move first in every Status Phase — a massive timing advantage for scoring objectives.' },
+  'Xxcha Kingdom':            { warrior:1, merchant:3, sage:1, diplomat:5, complexity:2, why: 'The ultimate diplomats. Use Political Favor to veto resolutions and win the Agenda Phase nearly every round.' },
+  'Yin Brotherhood':          { warrior:2, merchant:1, sage:3, diplomat:2, complexity:3, why: 'Fanatics who sacrifice their own units for tactical advantage. Indoctrination can steal opponent ships — wild, unpredictable, and very fun.' },
+  'Universities of Jol-Nar':  { warrior:1, merchant:2, sage:5, diplomat:2, complexity:4, why: "The galaxy's greatest scientists. Start with 4 technologies and research faster than anyone. By Round 4 you'll have toys nobody else can counter." },
+  'Mentak Coalition':         { warrior:3, merchant:3, sage:2, diplomat:2, complexity:3, why: 'Pirate opportunists who pillage trade goods and punish anyone who attacks them first. Strong economy with a sharp military edge.' },
+  'Winnu':                    { warrior:1, merchant:2, sage:3, diplomat:3, complexity:5, why: 'A high-skill faction with a unique victory path: take Mecatol Rex and never let go. Demanding to master but deeply rewarding.' },
+  'Nekro Virus':              { warrior:4, merchant:1, sage:3, diplomat:1, complexity:5, why: 'Consume your enemies to grow stronger. Every ship destroyed feeds your army. Strange, powerful, and unlike anything else in the game.' },
+  'Embers of Muaat':          { warrior:4, merchant:1, sage:3, diplomat:1, complexity:4, why: 'Warlords who build the War Sun — the most powerful unit in the game. Slow early, terrifying once you hit your stride.' },
+  'Ghosts of Creuss':         { warrior:2, merchant:1, sage:4, diplomat:1, complexity:4, why: "Wormhole masters who rewrite the galaxy's travel lanes. Teleport across the board to threaten from angles nobody anticipated." },
+  'Arborec':                  { warrior:2, merchant:1, sage:2, diplomat:2, complexity:4, why: 'A plant-based hivemind that grows infantry from planets. Unique production mechanic rewards patient, methodical, expansionist play.' },
+  "Sardakk N'orr":            { warrior:5, merchant:1, sage:1, diplomat:1, complexity:1, why: "Pure conquest. The weakest starting stats in the game — but your units get upgraded abilities and you're built for one thing: relentless aggression." },
+};
+
+let quizPage = 0;
+let quizAnswers = [];
+
+function openQuiz() {
+  quizPage = 0;
+  quizAnswers = new Array(QUIZ_QUESTIONS.length).fill(undefined);
+  renderQuizPage();
+  el('quiz-modal').classList.remove('hidden');
+}
+
+function closeQuiz() {
+  el('quiz-modal').classList.add('hidden');
+}
+
+function selectQuizAnswer(optIdx) {
+  quizAnswers[quizPage - 1] = optIdx;
+  renderQuizPage();
+}
+
+function quizBack() {
+  if (quizPage > 0) { quizPage--; renderQuizPage(); }
+}
+
+function quizNext() {
+  const total = QUIZ_QUESTIONS.length;
+  if (quizPage === 0) { quizPage = 1; renderQuizPage(); return; }
+  if (quizPage <= total) {
+    if (quizAnswers[quizPage - 1] === undefined) return;
+    quizPage++;
+    renderQuizPage();
+  }
+}
+
+function quizPickFaction(name) {
+  selectFaction(name);
+  closeQuiz();
+  // Scroll the selected row into view
+  const row = document.querySelector(`.fs-faction-row[data-faction="${name}"]`);
+  if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function scoreQuiz() {
+  const user = { warrior: 0, merchant: 0, sage: 0, diplomat: 0 };
+  let userComplexity = 3;
+  for (let i = 0; i < QUIZ_QUESTIONS.length; i++) {
+    const idx = quizAnswers[i];
+    if (idx === undefined) continue;
+    const opt = QUIZ_QUESTIONS[i].options[idx];
+    if (opt.scores) for (const [k, v] of Object.entries(opt.scores)) user[k] = (user[k] || 0) + v;
+    if (opt.complexity !== undefined) userComplexity = opt.complexity;
+  }
+  return Object.entries(FACTION_ARCHETYPES).map(([name, data]) => {
+    let score = ['warrior','merchant','sage','diplomat'].reduce((s, k) => s + user[k] * data[k], 0);
+    score -= Math.abs(userComplexity - data.complexity) * 2;
+    return { name, score, why: data.why };
+  }).sort((a, b) => b.score - a.score).slice(0, 3);
+}
+
+function renderQuizPage() {
+  const body = el('quiz-body');
+  const footer = el('quiz-footer');
+  const total = QUIZ_QUESTIONS.length;
+  const pct = quizPage === 0 ? 0 : quizPage > total ? 100 : Math.round((quizPage / total) * 100);
+  el('quiz-progress-bar').style.width = pct + '%';
+
+  if (quizPage === 0) {
+    body.innerHTML = `
+      <div style="text-align:center;padding:8px 0 4px">
+        <div style="font-size:38px;margin-bottom:14px;opacity:0.7">⬡</div>
+        <div style="font-family:var(--font-title);font-size:22px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin-bottom:20px">The Galaxy Awaits</div>
+        <div class="quiz-intro-lore">
+          <p>In the far reaches of space, seventeen civilizations race toward <strong>Mecatol Rex</strong> — the ancient imperial throne world at the center of the galaxy. Whoever holds it commands all.</p>
+          <p>From battle-hardened warriors to cunning traders, technological visionaries to master diplomats — each faction has a unique path to victory and a unique way to play.</p>
+          <p>Answer five questions and we'll find the faction that matches how you want to conquer the galaxy.</p>
+        </div>
+      </div>`;
+    footer.innerHTML = `
+      <button class="quiz-nav-btn secondary" onclick="closeQuiz()">← Back to List</button>
+      <button class="quiz-nav-btn primary" onclick="quizNext()">Begin →</button>`;
+
+  } else if (quizPage <= total) {
+    const q = QUIZ_QUESTIONS[quizPage - 1];
+    const selIdx = quizAnswers[quizPage - 1];
+    body.innerHTML = `
+      <div class="quiz-q-num">Question ${quizPage} of ${total}</div>
+      <div class="quiz-q-text">${escapeHtml(q.q)}</div>
+      <div class="quiz-options">
+        ${q.options.map((opt, i) => `
+          <button class="quiz-opt${selIdx === i ? ' selected' : ''}" onclick="selectQuizAnswer(${i})">
+            <span class="quiz-opt-icon">${opt.icon}</span>
+            <div>
+              <div class="quiz-opt-label">${escapeHtml(opt.label)}</div>
+              <div class="quiz-opt-desc">${escapeHtml(opt.desc)}</div>
+            </div>
+          </button>`).join('')}
+      </div>`;
+    const has = selIdx !== undefined;
+    footer.innerHTML = `
+      <button class="quiz-nav-btn secondary" onclick="quizBack()">← Back</button>
+      <button class="quiz-nav-btn primary" onclick="quizNext()" ${has ? '' : 'disabled'}>${quizPage === total ? 'See Results →' : 'Next →'}</button>`;
+
+  } else {
+    const results = scoreQuiz();
+    const rankLabels = ['Best Match', 'Runner-up', 'Also Consider'];
+    const rankClass = ['gold', '', ''];
+    body.innerHTML = `
+      <div class="quiz-results-intro">Based on your answers, here are your <strong>top faction matches</strong>. Click one to select it and read the full guide.</div>
+      ${results.map((r, i) => {
+        const f = FACTIONS[r.name];
+        const color = f?.color || 'var(--gold)';
+        return `<div class="quiz-result-card${i === 0 ? ' top' : ''}" onclick="quizPickFaction(${JSON.stringify(r.name).replace(/"/g,'&quot;')})">
+          <div class="quiz-result-rank ${rankClass[i]}">${rankLabels[i]}</div>
+          <div class="quiz-result-name" style="color:${color}">${escapeHtml(r.name)}</div>
+          <div class="quiz-result-why">${escapeHtml(r.why)}</div>
+          <button class="quiz-result-select-btn">Select This Faction →</button>
+        </div>`;
+      }).join('')}`;
+    footer.innerHTML = `
+      <button class="quiz-nav-btn secondary" onclick="quizPage=1;renderQuizPage()">↺ Retake Quiz</button>
+      <button class="quiz-nav-btn secondary" onclick="closeQuiz()">Browse All Factions</button>`;
+  }
+}
+
+// ── Faction Selection ─────────────────────────────────────────────────────────
+
+el('fs-start-btn').addEventListener('click', async () => {
+  if (!selectedFaction) return;
+  el('fs-start-btn').disabled = true;
+  el('fs-start-btn').textContent = 'Starting…';
+
+  await fetch('/api/state/reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ faction: selectedFaction })
+  });
+
+  startGame(selectedFaction);
+});
+
+// ── Game Startup ────────────────────────────────────────────────────────────────
+
+function startGame(factionName) {
+  const f = FACTIONS[factionName] || FACTIONS['Federation of Sol'];
+
+  // Update game UI for chosen faction
+  el('faction-badge').innerHTML = escapeHtml(factionName.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
+  el('sheet-title').textContent = `⬡ Commander Kramer — ${factionName}`;
+  el('hex-player-label').textContent = f.abbr;
+
+  // Transition screens
+  el('faction-screen').classList.add('hidden');
+  el('game-screen').classList.remove('hidden');
+  document.title = `TI4 — ${factionName}`;
+
+  // Reset game state UI
+  el('log').innerHTML = '';
+  el('coach-body').innerHTML = '<div id="coach-empty">Awaiting your first decision…</div>';
+  history = [];
+  streaming = false;
+  phasesSeen = new Set();
+
+  const openingMessage = `Begin the game. I am playing as the ${factionName}. Set the scene for Round 1, explain the Strategy Phase, and present the 8 strategy cards so I can pick — coaching me on which one fits my faction this round.`;
+  sendTurn(openingMessage);
+}
+
+// ── Phase Tutorial Content ──────────────────────────────────────────────────────
+
+const PHASE_TUTORIALS = {
+  strategy: {
+    title: 'Strategy Phase',
+    intro: 'Each player picks one of 8 strategy cards. Your choice defines your round — what you can do, when you act, and what secondary ability your opponents can use.',
+    points: [
+      { head: 'The Speaker picks first', body: 'The player with the Speaker token selects first, then clockwise. The Speaker token passes one player clockwise each Status Phase.' },
+      { head: 'Initiative order matters', body: 'Lower card number = you act earlier in the Action Phase. Leadership (1) goes first; Imperial (8) goes last. Early initiative means more options before opponents react.' },
+      { head: 'Primary vs Secondary', body: 'You get the card\'s powerful Primary ability — yours alone. Every other player can spend one Strategy Command Token (STRAT) to use its weaker Secondary.' },
+      { head: 'Unpicked cards pay out', body: 'In games with fewer than 8 players, unpicked strategy cards each grant 3 Trade Goods during Status Phase. This shapes the meta — cards no one wants still have value.' },
+    ]
+  },
+  action: {
+    title: 'Action Phase',
+    intro: 'The heart of TI4. Players take turns in initiative order (lowest strategy card number first), each taking exactly one action per turn.',
+    points: [
+      { head: 'Tactical Action', body: 'Place a Command Token from your tactics pool onto a system, then move ships in and/or produce units there. This is your primary tool for expansion, combat, and production.' },
+      { head: 'Strategic Action', body: 'Activate your strategy card\'s Primary ability (unique to you), then all other players may spend 1 Strategy CC to use its Secondary. Usually done once and early.' },
+      { head: 'Component Action', body: 'Play an Action Card, use a Technology ability, or trigger a faction ability marked [ACTION]. These can be powerful interrupts or free actions.' },
+      { head: 'Passing', body: 'Once you pass, you\'re done for the round — no more actions. The phase ends when all players pass consecutively. Timing your pass is strategic; pass too early and opponents act unopposed.' },
+    ]
+  },
+  status: {
+    title: 'Status Phase',
+    intro: 'Scoring and housekeeping. Executed in strict order — every step matters. Missing a score is the most common new-player mistake.',
+    points: [
+      { head: '1. Score objectives', body: 'If you meet a public or secret objective\'s conditions RIGHT NOW, score it. Max 1 public + 1 secret per round. You cannot score retroactively — if you forget, you lose the VP.' },
+      { head: '2. Reveal a new objective', body: 'Flip the next public objective card face-up. This previews what to aim for next round — read it now and start planning.' },
+      { head: '3. Repair, return, ready', body: 'Repair all Sustained Damage units. Pick up Command Tokens from the board and redistribute to your pools. Ready all exhausted planets (flip face-up).' },
+      { head: '4. Draw + Speaker passes', body: 'Draw Action Cards based on your technology. Pass the Speaker token one player clockwise. Agenda Phase only triggers starting Round 3.' },
+    ]
+  },
+  agenda: {
+    title: 'Agenda Phase',
+    intro: '(Rounds 3+) The galaxy votes on laws and directives. These can permanently reshape the game — pay attention to every agenda.',
+    points: [
+      { head: 'Two agendas per round', body: 'Reveal and fully resolve one agenda, then repeat for the second. Each is voted on separately with fresh influence spending.' },
+      { head: 'Laws vs Directives', body: 'Laws are PERMANENT — they stay in play and alter the rules for the rest of the game. Directives are one-time effects that resolve immediately and are discarded.' },
+      { head: 'Voting with influence', body: 'Exhaust planets to spend their influence value as votes. High-influence planets (like Mecatol Rex) have massive political power. You vote for OR against each outcome.' },
+      { head: 'Speaker votes last', body: 'The Speaker sees all votes before casting theirs and breaks ties. Being Speaker in Agenda Phase is significant power — use it or trade it wisely.' },
+    ]
+  },
+};
+
+// ── Game Term Dictionary ────────────────────────────────────────────────────────
+
+const GAME_TERMS = {
+  'Sustain Damage': 'This ship absorbs 1 hit without being destroyed — place it on its side. It repairs during Status Phase. Each ship can only sustain once per combat round.',
+  'Anti-Fighter Barrage': 'Fires before combat begins to destroy enemy fighters. The target cannot return fire. Destroyers and some flagships have this.',
+  'Space Cannon': 'Long-range weapon that fires during movement, before combat. PDS units and certain ships have this. Hits ships and fighters.',
+  'Bombardment': 'Some ships (dreadnoughts, war suns) bombard enemy planets before a ground invasion — roll dice to destroy enemy infantry and PDS units.',
+  'Command Token': 'Plastic tokens representing your command capacity. Tactics pool activates systems. Fleet pool limits ships per system. Strategy pool uses secondary abilities.',
+  'Trade Goods': 'A flexible currency spent exactly like resources. Earned through trading commodities or certain abilities.',
+  'Commodities': 'Your faction\'s raw trade material — converted to Trade Goods when exchanged with an ally. Not spendable until traded.',
+  'Action Card': 'Cards played for various effects. Timing (when you can play it) is marked on the card: ACTION, COMBAT ROUND, BEFORE COMBAT, etc.',
+  'Promissory Note': 'Faction-specific cards traded between players as part of deals. Used once, then returned to the original owner.',
+  'Flagship': 'Your faction\'s unique capital ship with a special ability. The most powerful unit your faction fields — expensive to build but often game-defining.',
+  'War Sun': 'The strongest ship in the game: 3 combat dice, carries 6 fighters, can bombard. Requires Magmus Reactor technology to build.',
+  'Dreadnought': 'A powerful capital ship with Sustain Damage and Bombardment. Can carry 1 fighter. Slow but durable — the backbone of serious fleets.',
+  'PDS': 'Planetary Defense System — a ground unit with Space Cannon. Fires at enemy ships in adjacent systems. Protects planets from invasion.',
+  'Space Dock': 'Your production facility. The only place you can build units (unless you have special tech). Produces units up to its production value + 2.',
+  'Mecatol Rex': 'The galactic capital at the board\'s center. Control it via the Imperial strategy card\'s Primary to score VP and reveal objectives early.',
+  'Wormhole': 'A special connection between non-adjacent systems — ships move through as if the systems were adjacent. Alpha (α) and Beta (β) types connect to matching types.',
+  'Speaker': 'The player who picks their strategy card first each round. Also votes last in Agenda Phase and breaks ties. Speaker token passes clockwise each Status Phase.',
+  'Fleet Supply': 'Your Fleet Command Token count caps how many non-fighter ships can be in a single system. Exceed it and you must remove ships.',
+  'Reinforcements': 'The pile of Command Tokens and units off the board. Returned tokens come back during Status Phase; new units are built from here.',
+  'Ground Force': 'An infantry unit on a planet. Required to control planets (at least 1 infantry must be left after combat). Also called "troops" or "infantry".',
+};
+
+// ── Game Logic ─────────────────────────────────────────────────────────────────
+
+let history = [];
+let streaming = false;
+let streamingEntry = null;
+let streamingAccumulated = '';
+let currentState = null;
+let coachFlashTimer = null;
+let phasesSeen = new Set();
+
+function showPhaseTutorial(phase) {
+  const t = PHASE_TUTORIALS[phase];
+  if (!t) return;
+  const pointsHtml = t.points.map(p =>
+    `<div class="tutorial-point"><strong>${escapeHtml(p.head)}</strong> — ${escapeHtml(p.body)}</div>`
+  ).join('');
+  const entry = document.createElement('div');
+  entry.className = 'entry tutorial';
+  entry.innerHTML = `
+    <div class="entry-head" onclick="
+      const body = this.nextElementSibling;
+      body.classList.toggle('collapsed');
+      this.querySelector('.tutorial-toggle').textContent = body.classList.contains('collapsed') ? '▼ Show' : '▲ Hide';
+    ">
+      <span class="entry-icon">📖</span>
+      <span class="entry-who">${escapeHtml(t.title)} — How It Works</span>
+      <span class="tutorial-toggle">▲ Hide</span>
+    </div>
+    <div class="tutorial-body">
+      <div class="tutorial-intro">${escapeHtml(t.intro)}</div>
+      ${pointsHtml}
+      <button class="tutorial-dismiss" onclick="this.closest('.entry.tutorial').remove()">Got it, continue ↓</button>
+    </div>`;
+  el('log').appendChild(entry);
+  scrollToBottom(true);
+}
+
+function setPhase(phase) {
+  const phases = ['strategy', 'action', 'status', 'agenda'];
+  const idx = phases.indexOf(phase);
+  document.querySelectorAll('.phase-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', i === idx);
+    tab.classList.toggle('done', i < idx);
+  });
+  if (phase && !phasesSeen.has(phase)) {
+    phasesSeen.add(phase);
+    showPhaseTutorial(phase);
+  }
+}
+
+function toggleSheet() { el('command-sheet').classList.toggle('collapsed'); }
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderPlanets(planets) {
+  el('planets-row').innerHTML = planets.map(p =>
+    `<div class="planet-tag ${p.ready ? 'ready' : 'exhausted'}">
+      ${p.ready ? '✓' : '✗'} ${escapeHtml(p.name)} <span style="opacity:0.6">(${p.resources}/${p.influence})</span>
+    </div>`
+  ).join('');
+}
+
+function applyStateToUI(state) {
+  if (!state) return;
+  if (state.round) el('round-badge').textContent = `ROUND ${state.round}`;
+  if (state.phase) setPhase(state.phase);
+  if (state.player) {
+    const p = state.player;
+    if (p.vp !== undefined) el('stat-vp').textContent = p.vp;
+    if (p.tradeGoods !== undefined) el('stat-tg').textContent = p.tradeGoods;
+    if (p.commandTokens) {
+      if (p.commandTokens.tactics !== undefined) el('stat-tac').textContent = p.commandTokens.tactics;
+      if (p.commandTokens.fleet !== undefined) el('stat-fleet').textContent = p.commandTokens.fleet;
+      if (p.commandTokens.strategy !== undefined) el('stat-strat').textContent = p.commandTokens.strategy;
+    }
+    if (p.planets) renderPlanets(p.planets);
+  }
+  if (state.mecatolControlled) el('hex-mecatol').style.stroke = '#d4a843';
+  if (state.publicObjectives) renderObjectives(state.publicObjectives);
+  updateThreatBar();
+}
+
+function updateCoach(html) {
+  const body = el('coach-body');
+  body.innerHTML = html;
+  body.scrollTop = 0;
+  const panel = el('coach-panel');
+  clearTimeout(coachFlashTimer);
+  panel.classList.remove('fresh', 'fade-border');
+  void panel.offsetWidth;
+  panel.classList.add('fresh');
+  coachFlashTimer = setTimeout(() => { panel.classList.add('fade-border'); panel.classList.remove('fresh'); }, 50);
+}
+
+function isPinnedToBottom() {
+  const log = el('log');
+  return log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+}
+
+function scrollToBottom(force) {
+  const log = el('log');
+  if (force || isPinnedToBottom()) log.scrollTop = log.scrollHeight;
+}
+
+function addEntry(type, who, icon, html) {
+  const entry = document.createElement('div');
+  entry.className = `entry ${type}`;
+  entry.innerHTML = `<div class="entry-head"><span class="entry-icon">${icon}</span><span class="entry-who">${who}</span></div><div class="entry-body">${html}</div>`;
+  el('log').appendChild(entry);
+  scrollToBottom(true);
+  return entry;
+}
+
+const SORTED_TERMS = Object.entries(GAME_TERMS).sort((a, b) => b[0].length - a[0].length);
+
+function linkGameTerms(html) {
+  // Only transform text nodes, not content inside HTML tags
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => {
+    if (tag) return tag;
+    if (!text) return '';
+    let result = text;
+    for (const [term, def] of SORTED_TERMS) {
+      const re = new RegExp(`\\b(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'g');
+      result = result.replace(re, `<span class="game-term" data-tip="${escapeHtml(def)}">$1</span>`);
+    }
+    return result;
+  });
+}
+
+function formatMarkdown(raw) {
+  let text = raw.replace(/<!--STATE:[\s\S]*?-->/g, '').trim();
+  text = escapeHtml(text);
+  text = text
+    .replace(/\[VERDICT:(Good|Risky|Poor)\]/g, (_, v) => {
+      const cls = {Good:'good',Risky:'risky',Poor:'poor'}[v];
+      return `<span class="verdict ${cls}">${v.toUpperCase()}</span>`;
+    })
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+
+  const lines = text.split('\n');
+  const blocks = [];
+  let paraLines = [];
+  function flushPara() {
+    if (paraLines.length) { const c = paraLines.join('<br>').trim(); if (c) blocks.push(`<p>${c}</p>`); paraLines = []; }
+  }
+  for (const line of lines) {
+    const hMatch = line.match(/^#{2,3}\s+(.+)$/);
+    if (hMatch) { flushPara(); blocks.push(`<h4>${hMatch[1]}</h4>`); }
+    else if (line.trim() === '') { flushPara(); }
+    else { paraLines.push(line); }
+  }
+  flushPara();
+  return linkGameTerms(blocks.join('\n'));
+}
+
+function parseResponse(fullText) {
+  const sections = {};
+  const gmMatch      = fullText.match(/\[GM\]([\s\S]*?)(?=\[COACH\]|\[OPPONENTS\]|\[CHOICES\]|\[DEBRIEF\]|<!--STATE|$)/);
+  const coachMatch   = fullText.match(/\[COACH\]([\s\S]*?)(?=\[GM\]|\[OPPONENTS\]|\[CHOICES\]|\[DEBRIEF\]|<!--STATE|$)/);
+  const oppMatch     = fullText.match(/\[OPPONENTS\]([\s\S]*?)(?=\[GM\]|\[COACH\]|\[CHOICES\]|\[DEBRIEF\]|<!--STATE|$)/);
+  const choicesMatch = fullText.match(/\[CHOICES\]([\s\S]*?)(?=\[DEBRIEF\]|<!--STATE|$)/);
+  const debriefMatch = fullText.match(/\[DEBRIEF\]([\s\S]*?)(?=<!--STATE|$)/);
+  if (gmMatch)    sections.gm        = gmMatch[1].trim();
+  if (coachMatch) sections.coach     = coachMatch[1].trim();
+  if (oppMatch)   sections.opponents = oppMatch[1].trim();
+  if (choicesMatch) {
+    sections.choices = choicesMatch[1].trim()
+      .split('\n').filter(l => /^\s*\d+[.)]\s/.test(l))
+      .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(l => l.length > 0);
+  }
+  if (debriefMatch) sections.debrief = debriefMatch[1].trim();
+  return sections;
+}
+
+function renderDebrief(raw) {
+  // Extract the three structured sections from the debrief text
+  const thisRound = raw.match(/\*\*This Round:\*\*([\s\S]*?)(?=\*\*Missed:|$)/)?.[1]?.trim() || '';
+  const missed    = raw.match(/\*\*Missed:\*\*([\s\S]*?)(?=\*\*Concept:|$)/)?.[1]?.trim() || '';
+  const concept   = raw.match(/\*\*Concept:\*\*([\s\S]*?)$/)?.[1]?.trim() || '';
+
+  if (!thisRound && !missed && !concept) return; // malformed — skip
+
+  const entry = document.createElement('div');
+  entry.className = 'entry debrief';
+  entry.innerHTML = `
+    <div class="entry-head" onclick="
+      const b = this.nextElementSibling;
+      b.classList.toggle('collapsed');
+      this.querySelector('.tutorial-toggle').textContent = b.classList.contains('collapsed') ? '▼ Show' : '▲ Hide';
+    ">
+      <span class="entry-icon">◎</span>
+      <span class="entry-who">Round Debrief</span>
+      <span class="tutorial-toggle">▲ Hide</span>
+    </div>
+    <div class="debrief-body">
+      ${thisRound ? `<div class="debrief-section">
+        <div class="debrief-label well">✓ This Round</div>
+        <div class="debrief-text">${formatMarkdown(thisRound)}</div>
+      </div>` : ''}
+      ${missed ? `<div class="debrief-section">
+        <div class="debrief-label miss">✗ Missed</div>
+        <div class="debrief-text">${formatMarkdown(missed)}</div>
+      </div>` : ''}
+      ${concept ? `<div class="debrief-section">
+        <div class="debrief-label study">→ Study</div>
+        <div class="debrief-text">${formatMarkdown(concept)}</div>
+      </div>` : ''}
+    </div>`;
+  el('log').appendChild(entry);
+  scrollToBottom(true);
+}
+
+function renderSections(sections) {
+  if (sections.gm)        addEntry('gm',       'GAME MASTER', '⬡', formatMarkdown(sections.gm));
+  if (sections.coach)     updateCoach(formatMarkdown(sections.coach));
+  if (sections.opponents) addEntry('opponent', 'OPPONENTS',   '⬟', formatMarkdown(sections.opponents));
+  if (sections.choices && sections.choices.length > 0) appendChoices(sections.choices);
+  if (sections.debrief)   renderDebrief(sections.debrief);
+}
+
+function appendChoices(choices) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'choices';
+  choices.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-num">OPTION ${i + 1}</span>${escapeHtml(text)}`;
+    btn.addEventListener('click', () => selectChoice(text));
+    wrapper.appendChild(btn);
+  });
+  el('log').appendChild(wrapper);
+  scrollToBottom(true);
+}
+
+function selectChoice(text) { el('input-area').value = text; sendMessage(); }
+
+// ── Hex Galaxy Map ─────────────────────────────────────────────────────────────
+
+const HEX_GRID = [
+  [0,0],
+  [1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1],
+  [2,0],[2,-1],[2,-2],[1,-2],[0,-2],[-1,-1],
+  [-2,0],[-2,1],[-2,2],[-1,2],[0,2],[1,1],
+  [3,0],[3,-1],[3,-2],
+  [3,-3],[2,-3],[1,-3],
+  [0,-3],[-1,-2],[-2,-1],
+  [-3,0],[-3,1],[-3,2],
+  [-3,3],[-2,3],[-1,3],
+  [0,3],[1,2],[2,1]
+];
+
+let boardState = [];
+let recentChanges = new Set();
+let mapZoom = 1, mapPanX = 0, mapPanY = 0, mapDragging = false, mapDragStart = {};
+let mapInteractionReady = false;
+
+function hexPixel(q, r, size) {
+  return { x: size * Math.sqrt(3) * (q + r / 2), y: size * 1.5 * r };
+}
+
+function hexPoints(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i - 30);
+    pts.push(`${(cx + size * Math.cos(a)).toFixed(2)},${(cy + size * Math.sin(a)).toFixed(2)}`);
+  }
+  return pts.join(' ');
+}
+
+function tileFill(tile) {
+  if (!tile) return '#060a10';
+  if (tile.pos === 0) return '#1a0832';
+  if (tile.type === 'home') return '#080d1a';
+  if (tile.anomaly === 'supernova') return '#1a0800';
+  if (tile.anomaly) return '#100a00';
+  if (tile.wh) return '#0a0a1f';
+  if (tile.planets && tile.planets.length) return '#0a1428';
+  return '#060a10';
+}
+
+function tileStroke(tile) {
+  if (!tile) return '#1e2240';
+  if (tile.pos === 0) return '#6b2fa0';
+  if (tile.type === 'home') return '#d4a843';
+  if (tile.anomaly) return '#7a2020';
+  if (tile.wh) return '#3535a0';
+  if (tile.planets && tile.planets.length) return '#2a5070';
+  return '#1e2240';
+}
+
+function applyBoardDelta(tiles) {
+  if (!Array.isArray(tiles)) return;
+  recentChanges = new Set();
+  tiles.forEach(tile => {
+    const idx = boardState.findIndex(t => t.pos === tile.pos);
+    if (idx >= 0) Object.assign(boardState[idx], tile);
+    else boardState.push({ ...tile });
+    recentChanges.add(tile.pos);
+  });
+  // Don't flag initial full-board load as "changes"
+  if (tiles.length >= 30) recentChanges.clear();
+  renderMinimap();
+}
+
+function renderMinimap() {
+  const svgEl = document.getElementById('galaxy-svg');
+  if (!svgEl) return;
+  if (!boardState.length) return;
+  const size = 10;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  HEX_GRID.forEach(([q, r]) => {
+    const p = hexPixel(q, r, size);
+    const hw = size * Math.sqrt(3) / 2;
+    minX = Math.min(minX, p.x - hw); minY = Math.min(minY, p.y - size);
+    maxX = Math.max(maxX, p.x + hw); maxY = Math.max(maxY, p.y + size);
+  });
+  const pad = 3, W = Math.round(maxX - minX + pad * 2), H = Math.round(maxY - minY + pad * 2);
+  const ox = -minX + pad, oy = -minY + pad;
+  svgEl.setAttribute('width', W); svgEl.setAttribute('height', H);
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.innerHTML = '';
+  HEX_GRID.forEach(([q, r], i) => {
+    const p = hexPixel(q, r, size);
+    const tile = boardState.find(t => t.pos === i);
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', hexPoints(p.x + ox, p.y + oy, size - 0.8));
+    poly.setAttribute('fill', tileFill(tile));
+    poly.setAttribute('stroke', tileStroke(tile));
+    poly.setAttribute('stroke-width', tile && (tile.pos === 0 || tile.type === 'home') ? '1.2' : '0.7');
+    svgEl.appendChild(poly);
+    // ctrl dot for home systems
+    if (tile && tile.ctrl) {
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', p.x + ox); dot.setAttribute('cy', p.y + oy); dot.setAttribute('r', 2);
+      dot.setAttribute('fill', tile.ctrl === currentState?.faction ? '#d4a843' : '#4a5570');
+      svgEl.appendChild(dot);
+    }
+  });
+}
+
+function seededRand(seed) {
+  let s = (seed * 1664525 + 1013904223) & 0xffffffff;
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 4294967295;
+  };
+}
+
+function hexDecor(i, tile, cx, cy, size) {
+  const rand = seededRand(i * 7919 + 1);
+  const f = n => n.toFixed(2);
+  const clipId = `hc${i}`;
+  let d = `<clipPath id="${clipId}"><polygon points="${hexPoints(cx, cy, size - 2)}"/></clipPath>`;
+  d += `<g clip-path="url(#${clipId})">`;
+
+  // Stars in every tile
+  const nStars = 3 + Math.floor(rand() * 5);
+  for (let s = 0; s < nStars; s++) {
+    const a = rand() * Math.PI * 2, dist = rand() * size * 0.78;
+    const sx = cx + Math.cos(a) * dist, sy = cy + Math.sin(a) * dist;
+    d += `<circle cx="${f(sx)}" cy="${f(sy)}" r="${f(0.4 + rand() * 0.8)}" fill="white" opacity="${f(0.1 + rand() * 0.22)}"/>`;
+  }
+
+  if (tile) {
+    if (tile.type === 'mecatol') {
+      // Concentric rings + spokes
+      [0.58, 0.38, 0.18].forEach((r, ri) => {
+        d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*r)}" fill="none" stroke="#9b5de5" stroke-width="${ri === 0 ? 0.6 : 0.8}" opacity="${f(0.12 + ri * 0.1)}"/>`;
+      });
+      for (let sp = 0; sp < 6; sp++) {
+        const a = sp * Math.PI / 3;
+        d += `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(cx + Math.cos(a)*size*0.55)}" y2="${f(cy + Math.sin(a)*size*0.55)}" stroke="#6b2fa0" stroke-width="0.5" opacity="0.2"/>`;
+      }
+      d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*0.1)}" fill="#9b5de5" opacity="0.45"/>`;
+
+    } else if (tile.type === 'home') {
+      // Large home planet + orbital ring
+      d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*0.26)}" fill="#d4a843" opacity="0.18"/>`;
+      d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*0.32)}" fill="none" stroke="#d4a843" stroke-width="1.2" opacity="0.15"/>`;
+      d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*0.55)}" fill="none" stroke="#d4a843" stroke-width="0.5" opacity="0.1" stroke-dasharray="4,4"/>`;
+      // Highlight
+      d += `<circle cx="${f(cx - size*0.09)}" cy="${f(cy - size*0.09)}" r="${f(size*0.1)}" fill="white" opacity="0.1"/>`;
+
+    } else if (tile.anomaly === 'supernova') {
+      // Burst of rays
+      for (let sp = 0; sp < 14; sp++) {
+        const a = sp * Math.PI / 7 + rand() * 0.12;
+        const len = size * (0.35 + rand() * 0.45);
+        d += `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(cx + Math.cos(a)*len)}" y2="${f(cy + Math.sin(a)*len)}" stroke="#ff8020" stroke-width="${f(0.4 + rand() * 1.1)}" opacity="${f(0.15 + rand() * 0.2)}"/>`;
+      }
+      d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*0.22)}" fill="#ff6010" opacity="0.28"/>`;
+      d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*0.1)}" fill="#ffcc60" opacity="0.4"/>`;
+
+    } else if (tile.anomaly === 'asteroid') {
+      // Scattered rocks along a band
+      const bandA = rand() * Math.PI;
+      for (let r = 0; r < 12; r++) {
+        const a = bandA + (rand() - 0.5) * Math.PI * 1.1;
+        const dist = size * (0.15 + rand() * 0.58);
+        const rx = cx + Math.cos(a) * dist, ry = cy + Math.sin(a) * dist;
+        const rr = 1.2 + rand() * 3.2;
+        d += `<ellipse cx="${f(rx)}" cy="${f(ry)}" rx="${f(rr)}" ry="${f(rr*0.65)}" transform="rotate(${f(rand()*360)},${f(rx)},${f(ry)})" fill="#7a6888" opacity="${f(0.22 + rand() * 0.28)}"/>`;
+      }
+
+    } else if (tile.anomaly === 'gravity-rift') {
+      // Concentric spiraling arcs
+      for (let arc = 0; arc < 5; arc++) {
+        const r = size * (0.12 + arc * 0.1);
+        const startA = arc * 0.7;
+        const x1 = cx + Math.cos(startA) * r, y1 = cy + Math.sin(startA) * r;
+        const x2 = cx + Math.cos(startA + Math.PI * 1.4) * r, y2 = cy + Math.sin(startA + Math.PI * 1.4) * r;
+        d += `<path d="M${f(x1)},${f(y1)} A${f(r)},${f(r)} 0 1,1 ${f(x2)},${f(y2)}" fill="none" stroke="#30c0a0" stroke-width="0.7" opacity="${f(0.12 + arc * 0.06)}"/>`;
+      }
+      d += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(size*0.1)}" fill="#20a070" opacity="0.35"/>`;
+
+    } else if (tile.anomaly === 'nebula') {
+      // Soft overlapping blobs
+      const blobColors = ['#9b5de5', '#d4548a', '#5096e0', '#c07040'];
+      for (let b = 0; b < 4; b++) {
+        const bx = cx + (rand() - 0.5) * size * 0.65;
+        const by = cy + (rand() - 0.5) * size * 0.55;
+        const rx = size * (0.18 + rand() * 0.22), ry = size * (0.13 + rand() * 0.16);
+        d += `<ellipse cx="${f(bx)}" cy="${f(by)}" rx="${f(rx)}" ry="${f(ry)}" fill="${blobColors[b]}" opacity="${f(0.07 + rand() * 0.1)}"/>`;
+      }
+
+    } else if (tile.planets && tile.planets.length > 0) {
+      // Regular system — draw each planet as a circle
+      const planets = tile.planets.slice(0, 3);
+      const positions = planets.length === 1
+        ? [[cx, cy - size * 0.04]]
+        : planets.length === 2
+          ? [[cx - size * 0.2, cy + size * 0.04], [cx + size * 0.2, cy + size * 0.04]]
+          : [[cx, cy - size * 0.22], [cx - size * 0.19, cy + size * 0.14], [cx + size * 0.19, cy + size * 0.14]];
+      planets.forEach((planet, pi) => {
+        const [px, py] = positions[pi];
+        const ri = (planet.res || 0) + (planet.inf || 0);
+        const pr = Math.max(3.5, Math.min(8.5, 3.5 + ri * 0.75));
+        const col = planet.trait === 'Industrial' ? '#c87a40' : planet.trait === 'Cultural' ? '#5880c8' : planet.trait === 'Hazardous' ? '#a04040' : '#506080';
+        d += `<circle cx="${f(px)}" cy="${f(py)}" r="${f(pr)}" fill="${col}" opacity="0.38"/>`;
+        d += `<circle cx="${f(px)}" cy="${f(py)}" r="${f(pr * 1.55)}" fill="none" stroke="${col}" stroke-width="0.6" opacity="0.18"/>`;
+        d += `<circle cx="${f(px - pr * 0.28)}" cy="${f(py - pr * 0.28)}" r="${f(pr * 0.28)}" fill="white" opacity="0.18"/>`;
+      });
+    }
+
+    // Wormhole portal overlay (can stack with planets)
+    if (tile.wh) {
+      const wColor = tile.wh === 'alpha' ? '#6060e0' : '#40c0a0';
+      d += `<circle cx="${f(cx + size*0.32)}" cy="${f(cy - size*0.35)}" r="${f(size*0.16)}" fill="${wColor}" opacity="0.15"/>`;
+      d += `<circle cx="${f(cx + size*0.32)}" cy="${f(cy - size*0.35)}" r="${f(size*0.16)}" fill="none" stroke="${wColor}" stroke-width="1" opacity="0.35" stroke-dasharray="3,2"/>`;
+      d += `<circle cx="${f(cx + size*0.32)}" cy="${f(cy - size*0.35)}" r="${f(size*0.07)}" fill="${wColor}" opacity="0.4"/>`;
+    }
+  }
+
+  d += '</g>';
+  return d;
+}
+
+function buildMapSVG() {
+  const size = 42;
+  const hw = size * Math.sqrt(3) / 2;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  HEX_GRID.forEach(([q, r]) => {
+    const p = hexPixel(q, r, size);
+    minX = Math.min(minX, p.x - hw); minY = Math.min(minY, p.y - size);
+    maxX = Math.max(maxX, p.x + hw); maxY = Math.max(maxY, p.y + size);
+  });
+  const pad = size, W = Math.round(maxX - minX + pad * 2), H = Math.round(maxY - minY + pad * 2);
+  const ox = -minX + pad, oy = -minY + pad;
+  let out = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  out += `<rect width="${W}" height="${H}" fill="#030508"/>`;
+  HEX_GRID.forEach(([q, r], i) => {
+    const p = hexPixel(q, r, size);
+    const cx = p.x + ox, cy = p.y + oy;
+    const tile = boardState.find(t => t.pos === i);
+    const sw = tile && (tile.pos === 0 || tile.type === 'home') ? 2 : 1;
+    out += `<polygon id="hex-fill-${i}" points="${hexPoints(cx, cy, size - 1)}" fill="${tileFill(tile)}" stroke="${tileStroke(tile)}" stroke-width="${sw}"/>`;
+    out += hexDecor(i, tile, cx, cy, size);
+    if (tile) {
+      const fs = size * 0.19;
+      // System name
+      if (tile.name) {
+        const name = tile.name.length > 10 ? tile.name.slice(0, 9) + '…' : tile.name;
+        out += `<text x="${cx}" y="${cy - size * 0.02}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${fs}" fill="#6a8aaa">${escapeHtml(name)}</text>`;
+      }
+      // Res/Inf
+      if (tile.res !== undefined && tile.inf !== undefined && tile.planets && tile.planets.length) {
+        out += `<text x="${cx}" y="${cy + size * 0.38}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${fs * 0.9}" fill="#4a7060">${tile.res}/${tile.inf}</text>`;
+      }
+      // Wormhole
+      if (tile.wh) {
+        out += `<text x="${cx + size * 0.4}" y="${cy - size * 0.42}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${fs}" fill="#7070e0">${tile.wh[0].toUpperCase()}</text>`;
+      }
+      // Anomaly
+      if (tile.anomaly) {
+        out += `<text x="${cx}" y="${cy + size * 0.2}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${fs * 1.4}" fill="#c04040">!</text>`;
+      }
+      // Control indicator
+      if (tile.ctrl) {
+        const isMe = tile.ctrl === currentState?.faction;
+        out += `<circle cx="${cx}" cy="${cy - size * 0.55}" r="${size * 0.1}" fill="${isMe ? '#d4a843' : '#4a5570'}" opacity="0.85"/>`;
+      }
+      // Ships
+      if (tile.ships) {
+        out += `<text x="${cx}" y="${cy + size * 0.6}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${fs * 0.8}" fill="#8090a0">${escapeHtml(tile.ships)}</text>`;
+      }
+    }
+    // Recent change highlight
+    if (recentChanges.has(i)) {
+      out += `<polygon points="${hexPoints(cx, cy, size - 2)}" fill="rgba(200,184,112,0.07)" stroke="#c8b870" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.85"/>`;
+      out += `<circle cx="${cx - size*0.38}" cy="${cy - size*0.44}" r="${size*0.16}" fill="#c8b870"/>`;
+      out += `<text x="${cx - size*0.38}" y="${cy - size*0.44 + size*0.065}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${size*0.18}" fill="#030508" font-weight="bold">★</text>`;
+    }
+    // Position index (faint)
+    out += `<text x="${cx + size*0.4}" y="${cy + size*0.58}" text-anchor="end" font-family="IBM Plex Mono" font-size="${size*0.13}" fill="#1e2a40" opacity="0.5">${i}</text>`;
+    // Transparent hit area on top for clean event targeting
+    out += `<polygon data-pos="${i}" points="${hexPoints(cx, cy, size - 1)}" fill="transparent" stroke="none" style="cursor:pointer"/>`;
+  });
+  out += `</svg>`;
+  return out;
+}
+
+function applyMapTransform() {
+  const wrapper = el('map-transform-wrapper');
+  if (wrapper) wrapper.style.transform = `translate(${mapPanX}px,${mapPanY}px) scale(${mapZoom})`;
+  const lvl = el('map-zoom-level');
+  if (lvl) lvl.textContent = Math.round(mapZoom * 100) + '%';
+}
+
+function adjustMapZoom(factor, clientX, clientY) {
+  const container = el('map-svg-container');
+  if (!container) return;
+  const rect = container.getBoundingClientRect();
+  const mx = (clientX != null ? clientX : rect.left + rect.width / 2) - rect.left;
+  const my = (clientY != null ? clientY : rect.top + rect.height / 2) - rect.top;
+  const newZoom = Math.max(0.25, Math.min(5, mapZoom * factor));
+  mapPanX = mx - (mx - mapPanX) / mapZoom * newZoom;
+  mapPanY = my - (my - mapPanY) / mapZoom * newZoom;
+  mapZoom = newZoom;
+  applyMapTransform();
+}
+
+function mapZoomStep(factor) { adjustMapZoom(factor, null, null); }
+function mapZoomReset() { mapZoom = 1; mapPanX = 0; mapPanY = 0; applyMapTransform(); }
+
+function getStrategicNote(tile) {
+  if (!tile) return { text: 'Empty space. No economic value, but useful for fleet positioning or as a buffer zone between factions.', stars: 1 };
+  if (tile.pos === 0) return { text: 'The galactic capital. Controlling Mecatol Rex via the Imperial strategy card scores 1 VP per Status Phase and lets you reveal secret objectives. Costs 6 influence to land troops (Custodians token). Highly contested — worth contesting by Round 2–3 if you can hold it.', stars: 5 };
+  if (tile.type === 'home') return { text: `${tile.faction || 'A faction'}'s home system. Attacking an opponent's home is a declaration of total war — it unites other players against the aggressor. Only strike if you can finish them off or you have political cover.`, stars: 5 };
+  if (tile.anomaly === 'supernova') return { text: 'Ships cannot move through or into a Supernova. It creates an absolute barrier on the map. Planets here cannot be invaded. Acts as a hard wall — shapes movement corridors around it.', stars: 1 };
+  if (tile.anomaly === 'asteroid') return { text: 'Ships cannot move through Asteroid Fields (unless they have Antimass Deflectors tech). Planets can be invaded, but only by units already in the system. A natural defensive barrier — good if you hold it, bad if you need to cross it.', stars: 2 };
+  if (tile.anomaly === 'gravity-rift') return { text: 'Ships moving through a Gravity Rift roll 1 die per ship — on a 1–3 that ship is destroyed. However, ships gain +1 movement when passing through. High risk, high mobility — useful for surprise attacks across the board.', stars: 2 };
+  if (tile.anomaly === 'nebula') return { text: 'Ships defending inside a Nebula get +1 to all combat rolls. Movement into a Nebula costs 1 regardless of ship speed. A powerful defensive anchor — whoever plants a fleet here is hard to dislodge.', stars: 3 };
+  if (tile.wh) {
+    const other = tile.wh === 'alpha' ? 'beta' : 'alpha';
+    return { text: `Contains a ${tile.wh} wormhole. Ships can move between any two systems sharing the same wormhole type as if adjacent — connecting opposite sides of the galaxy. Whoever controls wormhole systems controls transit lanes. High strategic value for rapid reinforcement or surprise attacks.`, stars: 4 };
+  }
+  if (!tile.planets || tile.planets.length === 0) return { text: 'Empty space. No economic value, but useful for fleet positioning or as a buffer zone.', stars: 1 };
+  const res = tile.res || 0, inf = tile.inf || 0, total = res + inf;
+  const hasTech = tile.planets?.some(p => p.tech);
+  const techNote = hasTech ? ' Has a technology specialty — some factions can use this to skip tech prerequisites.' : '';
+  if (res >= 5) return { text: `High-resource system (${res}R total). Excellent for production — build ships and ground forces here. Prioritize capturing and holding this early.${techNote}`, stars: 5 };
+  if (inf >= 5) return { text: `High-influence system (${inf}I total). Excellent for technology research and Agenda Phase voting. Valuable for politically-active factions.${techNote}`, stars: 4 };
+  if (res >= 4 && inf >= 3) return { text: `Well-balanced system (${res}R / ${inf}I). Versatile — useful for both production and research. One of the stronger systems on the map.${techNote}`, stars: 4 };
+  if (total >= 6) return { text: `Strong combined output (${res}R / ${inf}I). Worth securing in the early game — provides solid economic foundation.${techNote}`, stars: 4 };
+  if (total >= 4) return { text: `Solid system (${res}R / ${inf}I). Useful for expanding your economy. Contested if it's close to two players' home systems.${techNote}`, stars: 3 };
+  if (total >= 2) return { text: `Modest system (${res}R / ${inf}I). Mainly useful for expanding your footprint or denying it to opponents.${techNote}`, stars: 2 };
+  return { text: `Low-value system (${res}R / ${inf}I). Mostly useful for controlling space — not worth a major fight.${techNote}`, stars: 1 };
+}
+
+function tileNameClass(tile) {
+  if (!tile) return '';
+  if (tile.pos === 0) return 'mecatol';
+  if (tile.anomaly) return 'anomaly';
+  if (tile.wh) return 'wormhole';
+  return '';
+}
+
+function buildTooltipHTML(tile) {
+  if (!tile) return '<div class="tt-name">Empty Space</div><div style="font-size:10px;color:var(--dim);margin-top:4px">No planets · Click for details</div>';
+  const nc = tileNameClass(tile);
+  let html = `<div class="tt-name ${nc}">${escapeHtml(tile.name || (tile.type === 'home' ? tile.faction + ' Home' : 'Unknown'))}</div>`;
+  if (tile.planets && tile.planets.length) {
+    tile.planets.forEach(p => {
+      html += `<div class="tt-planet-row"><span class="tt-planet-name">${escapeHtml(p.name)}</span><span class="tt-planet-ri">${p.res}R / ${p.inf}I</span></div>`;
+    });
+  }
+  html += '<div class="tt-divider"></div>';
+  const tags = [];
+  if (tile.anomaly) tags.push(`<span class="tt-tag anomaly">${tile.anomaly.replace('-', ' ')}</span>`);
+  if (tile.wh) tags.push(`<span class="tt-tag wormhole">${tile.wh} wormhole</span>`);
+  if (tile.ctrl) tags.push(`<span class="tt-tag ctrl">${escapeHtml(tile.ctrl)}</span>`);
+  if (tile.ships) tags.push(`<span class="tt-tag ships">${escapeHtml(tile.ships)}</span>`);
+  if (tags.length) html += '<div>' + tags.join('') + '</div>';
+  html += '<div class="tt-hint">Click for details</div>';
+  return html;
+}
+
+function buildPanelHTML(tile) {
+  if (!tile) {
+    return `<div class="tp-section">EMPTY SPACE</div><div class="tp-note">No planets or resources. Useful for fleet positioning, blocking movement corridors, or as a buffer between factions.</div>`;
+  }
+  let html = '';
+  // Planets
+  if (tile.planets && tile.planets.length) {
+    html += `<div class="tp-section">PLANETS</div>`;
+    tile.planets.forEach(p => {
+      const techLabels = { R: 'Red Tech', B: 'Blue Tech', G: 'Green Tech', Y: 'Yellow Tech' };
+      html += `<div class="tp-planet">
+        <div class="tp-planet-name">${escapeHtml(p.name)}</div>
+        <div class="tp-planet-ri"><span class="tp-ri-res">${p.res} Res</span> &nbsp;·&nbsp; <span class="tp-ri-inf">${p.inf} Inf</span></div>
+        <div class="tp-planet-badges">`;
+      if (p.trait) html += `<span class="tp-badge ${p.trait.toLowerCase()}">${p.trait}</span>`;
+      if (p.tech) html += `<span class="tp-badge tech-${p.tech.toLowerCase()}">${techLabels[p.tech] || p.tech}</span>`;
+      html += `</div></div>`;
+    });
+    if (tile.planets.length > 1) {
+      html += `<div class="tp-total">Total: <span class="tp-ri-res">${tile.res}R</span> / <span class="tp-ri-inf">${tile.inf}I</span></div>`;
+    }
+  } else if (tile.anomaly) {
+    html += `<div class="tp-section">ANOMALY TYPE</div><div class="tp-note" style="text-transform:capitalize;font-weight:bold;color:#c04040">${tile.anomaly.replace('-', ' ')}</div>`;
+  }
+  // Wormhole
+  if (tile.wh) {
+    const other = tile.wh === 'alpha' ? 'beta' : 'alpha';
+    html += `<div class="tp-section">WORMHOLE</div><div class="tp-note">${tile.wh.charAt(0).toUpperCase() + tile.wh.slice(1)} — connects to any other <strong>${tile.wh}</strong> wormhole system as if adjacent. Find the matching wormhole to understand this system's reach.</div>`;
+  }
+  // Strategic note
+  const { text, stars } = getStrategicNote(tile);
+  html += `<div class="tp-section">STRATEGIC VALUE</div>`;
+  html += `<div class="tp-value-dots">`;
+  for (let i = 0; i < 5; i++) html += `<div class="tp-dot ${i < stars ? 'filled' : 'empty'}"></div>`;
+  html += `</div>`;
+  html += `<div class="tp-note">${escapeHtml(text)}</div>`;
+  // Status
+  html += `<div class="tp-section">CURRENT STATUS</div>`;
+  html += `<div class="tp-status-row"><span class="tp-status-label">Controller</span><span class="tp-status-val">${escapeHtml(tile.ctrl || '—')}</span></div>`;
+  html += `<div class="tp-status-row"><span class="tp-status-label">Ships</span><span class="tp-status-val">${escapeHtml(tile.ships || '—')}</span></div>`;
+  if (tile.type === 'home') html += `<div class="tp-status-row"><span class="tp-status-label">Faction</span><span class="tp-status-val">${escapeHtml(tile.faction || '—')}</span></div>`;
+  return html;
+}
+
+let mapDragMoved = false;
+let activeTilePos = null;
+let hoveredTilePos = null;
+
+function setHexVisualState(pos, state) {
+  // state: 'hover' | 'selected' | null (reset to default)
+  const poly = document.getElementById(`hex-fill-${pos}`);
+  if (!poly) return;
+  const tile = boardState.find(t => t.pos === pos);
+  if (state === 'selected') {
+    poly.setAttribute('fill', 'rgba(212,168,67,0.18)');
+    poly.setAttribute('stroke', '#d4a843');
+    poly.setAttribute('stroke-width', '2.5');
+  } else if (state === 'hover') {
+    poly.setAttribute('fill', 'rgba(255,255,255,0.07)');
+    poly.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+    poly.setAttribute('stroke-width', '1.5');
+  } else {
+    const sw = tile && (tile.pos === 0 || tile.type === 'home') ? 2 : 1;
+    poly.setAttribute('fill', tileFill(tile));
+    poly.setAttribute('stroke', tileStroke(tile));
+    poly.setAttribute('stroke-width', String(sw));
+  }
+}
+
+function updateHexHover(pos) {
+  if (hoveredTilePos === pos) return;
+  // Clear previous hover (unless it's the selected tile)
+  if (hoveredTilePos !== null && hoveredTilePos !== activeTilePos) {
+    setHexVisualState(hoveredTilePos, null);
+  }
+  hoveredTilePos = pos;
+  if (pos !== null && pos !== activeTilePos) {
+    setHexVisualState(pos, 'hover');
+  }
+}
+
+function updateHexSelected(pos) {
+  // Deselect old
+  if (activeTilePos !== null) {
+    setHexVisualState(activeTilePos, hoveredTilePos === activeTilePos ? 'hover' : null);
+  }
+  activeTilePos = pos;
+  if (pos !== null) setHexVisualState(pos, 'selected');
+}
+
+function showTileTooltip(tile, clientX, clientY) {
+  const tt = document.getElementById('tile-tooltip');
+  if (!tt) return;
+  tt.innerHTML = buildTooltipHTML(tile);
+  tt.style.display = 'block';
+  positionTooltip(tt, clientX, clientY);
+}
+
+function positionTooltip(tt, clientX, clientY) {
+  const pad = 14, vw = window.innerWidth, vh = window.innerHeight;
+  let x = clientX + pad, y = clientY + pad;
+  tt.style.display = 'block';
+  const w = tt.offsetWidth, h = tt.offsetHeight;
+  if (x + w > vw - 8) x = clientX - w - pad;
+  if (y + h > vh - 8) y = clientY - h - pad;
+  tt.style.left = x + 'px';
+  tt.style.top = y + 'px';
+}
+
+function hideTileTooltip() {
+  const tt = document.getElementById('tile-tooltip');
+  if (tt) tt.style.display = 'none';
+}
+
+function showTilePanel(pos) {
+  const tile = boardState.find(t => t.pos === pos) || null;
+  const nameEl = document.getElementById('tp-name');
+  const bodyEl = document.getElementById('tp-body');
+  const panel = document.getElementById('tile-panel');
+  if (!nameEl || !bodyEl || !panel) return;
+  updateHexSelected(pos);
+  const rawName = tile ? (tile.name || (tile.type === 'home' ? (tile.faction || '') + ' Home' : 'System ' + pos)) : 'Empty Space';
+  nameEl.textContent = rawName.toUpperCase();
+  nameEl.className = 'tp-name ' + (tile ? tileNameClass(tile) : '');
+  bodyEl.innerHTML = buildPanelHTML(tile);
+  panel.classList.add('open');
+}
+
+function closeTilePanel() {
+  document.getElementById('tile-panel')?.classList.remove('open');
+  updateHexSelected(null);
+}
+
+function setupMapInteraction() {
+  if (mapInteractionReady) return;
+  mapInteractionReady = true;
+  const container = el('map-svg-container');
+
+  container.addEventListener('wheel', e => {
+    e.preventDefault();
+    adjustMapZoom(e.deltaY < 0 ? 1.12 : 0.89, e.clientX, e.clientY);
+  }, { passive: false });
+
+  container.addEventListener('mousemove', e => {
+    if (mapDragging) return;
+    const target = e.target.closest('[data-pos]');
+    if (target) {
+      const pos = parseInt(target.dataset.pos);
+      const tile = boardState.find(t => t.pos === pos) || { pos };
+      showTileTooltip(tile, e.clientX, e.clientY);
+      updateHexHover(pos);
+    } else {
+      hideTileTooltip();
+      updateHexHover(null);
+    }
+  });
+
+  container.addEventListener('mouseleave', () => { hideTileTooltip(); updateHexHover(null); });
+
+  container.addEventListener('click', e => {
+    if (mapDragMoved) { mapDragMoved = false; return; }
+    const target = e.target.closest('[data-pos]');
+    if (target) {
+      showTilePanel(parseInt(target.dataset.pos));
+    } else if (!e.target.closest('#tile-panel') && !e.target.closest('#map-zoom-controls')) {
+      closeTilePanel();
+    }
+  });
+
+  container.addEventListener('mousedown', e => {
+    if (e.target.closest('#map-zoom-controls') || e.target.closest('#tile-panel')) return;
+    mapDragging = true;
+    mapDragMoved = false;
+    mapDragStart = { x: e.clientX, y: e.clientY, px: mapPanX, py: mapPanY };
+    container.classList.add('dragging');
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!mapDragging) return;
+    const dx = e.clientX - mapDragStart.x, dy = e.clientY - mapDragStart.y;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) mapDragMoved = true;
+    mapPanX = mapDragStart.px + dx;
+    mapPanY = mapDragStart.py + dy;
+    applyMapTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!mapDragging) return;
+    mapDragging = false;
+    container.classList.remove('dragging');
+  });
+
+  // Touch: pinch-zoom + drag
+  let lastTouchDist = null, lastTouchMid = null;
+  container.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.hypot(dx, dy);
+      lastTouchMid = { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
+    } else if (e.touches.length === 1) {
+      mapDragging = true;
+      mapDragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, px: mapPanX, py: mapPanY };
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  container.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && lastTouchDist) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      adjustMapZoom(dist / lastTouchDist, lastTouchMid.x, lastTouchMid.y);
+      lastTouchDist = dist;
+    } else if (e.touches.length === 1 && mapDragging) {
+      mapPanX = mapDragStart.px + (e.touches[0].clientX - mapDragStart.x);
+      mapPanY = mapDragStart.py + (e.touches[0].clientY - mapDragStart.y);
+      applyMapTransform();
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  container.addEventListener('touchend', () => { mapDragging = false; lastTouchDist = null; });
+}
+
+async function generateBoard() {
+  const svgEl = document.getElementById('galaxy-svg');
+  if (svgEl) {
+    svgEl.innerHTML = `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" font-family="IBM Plex Mono" font-size="8" fill="#4a5570">generating…</text>`;
+    svgEl.setAttribute('width', 120); svgEl.setAttribute('height', 30);
+    svgEl.setAttribute('viewBox', '0 0 120 30');
+  }
+  try {
+    const res = await fetch('/api/board', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    if (data.board) { boardState = []; applyBoardDelta(data.board); }
+  } catch (e) {
+    console.warn('Board generation failed:', e);
+    if (svgEl) svgEl.innerHTML = '';
+  }
+}
+
+function openMapModal() {
+  const modal = el('map-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  const wrapper = el('map-transform-wrapper');
+  const emptyMsg = el('map-empty-msg');
+  const badge = el('map-changes-badge');
+  const count = el('map-changes-count');
+  if (boardState.length === 0) {
+    wrapper.innerHTML = '';
+    if (emptyMsg) emptyMsg.style.display = 'flex';
+    if (badge) badge.classList.remove('visible');
+  } else {
+    wrapper.innerHTML = buildMapSVG();
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    closeTilePanel();
+    hideTileTooltip();
+    applyMapTransform();
+    setupMapInteraction();
+    if (badge && count) {
+      const n = recentChanges.size;
+      if (n > 0) { count.textContent = n; badge.classList.add('visible'); }
+      else { badge.classList.remove('visible'); }
+    }
+  }
+}
+
+function closeMapModal() {
+  const modal = el('map-modal');
+  modal.classList.add('hidden');
+  hideTileTooltip();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !el('map-modal').classList.contains('hidden')) closeMapModal();
+});
+
+
+function startStreamEntry() {
+  streamingEntry = addEntry('gm', 'GAME MASTER', '⬡', '<div class="dots"><span></span><span></span><span></span></div>');
+}
+
+function updateStreamEntry(text) {
+  if (!streamingEntry) return;
+  const gmMatch = text.match(/\[GM\]([\s\S]*?)(?=\[COACH\]|\[OPPONENTS\]|\[CHOICES\]|<!--STATE|$)/);
+  const display = gmMatch ? gmMatch[1] : text.replace(/\[GM\]|\[COACH\]|\[OPPONENTS\]|\[CHOICES\]/g, '');
+  const clean = display.replace(/<!--STATE:[\s\S]*?-->/g, '').trim();
+  streamingEntry.querySelector('.entry-body').innerHTML =
+    clean ? formatMarkdown(clean) : '<div class="dots"><span></span><span></span><span></span></div>';
+
+  const coachMatch = text.match(/\[COACH\]([\s\S]*?)(?=\[GM\]|\[OPPONENTS\]|\[CHOICES\]|<!--STATE|$)/);
+  if (coachMatch && coachMatch[1].trim()) el('coach-body').innerHTML = formatMarkdown(coachMatch[1].trim());
+
+  scrollToBottom(false);
+}
+
+function finalizeStream(fullText) {
+  if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
+  const stateMatch = fullText.match(/<!--STATE:([\s\S]*?)-->/);
+  if (stateMatch) {
+    try {
+      const updates = JSON.parse(stateMatch[1]);
+      if (!currentState) currentState = {};
+      if (updates.board) { applyBoardDelta(updates.board); delete updates.board; }
+      deepMerge(currentState, updates);
+      applyStateToUI(currentState);
+    } catch(e) { console.warn('State parse failed:', e); }
+  }
+  if (boardState.length === 0 && currentState?.faction) generateBoard();
+  const sections = parseResponse(fullText);
+  if (!sections.gm && !sections.coach && !sections.opponents) {
+    const clean = fullText.replace(/<!--STATE:[\s\S]*?-->/g, '').trim();
+    if (clean) addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(clean));
+  } else {
+    renderSections(sections);
+  }
+}
+
+function deepMerge(target, source) {
+  for (const key of Object.keys(source)) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (!target[key]) target[key] = {};
+      deepMerge(target[key], source[key]);
+    } else { target[key] = source[key]; }
+  }
+}
+
+async function sendMessage() {
+  const textarea = el('input-area');
+  const text = textarea.value.trim();
+  if (!text || streaming) return;
+  textarea.value = '';
+  textarea.style.height = '';
+  await sendTurn(text);
+}
+
+async function sendTurn(text) {
+  streaming = true;
+  el('send-btn').disabled = true;
+
+  addEntry('player', 'COMMANDER KRAMER', '▶', `<p>${escapeHtml(text)}</p>`);
+  history.push({ role: 'user', content: text });
+  document.querySelectorAll('.choices').forEach(c => c.remove());
+  startStreamEntry();
+  streamingAccumulated = '';
+
+  try {
+    const res = await fetch('/api/turn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history })
+    });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      streamingAccumulated += decoder.decode(value, { stream: true });
+      updateStreamEntry(streamingAccumulated);
+    }
+
+    finalizeStream(streamingAccumulated);
+    history.push({ role: 'assistant', content: streamingAccumulated });
+
+    if (history.length > 40) {
+      history = history.slice(-40);
+      if (history[0]?.role === 'assistant') history = history.slice(1);
+    }
+  } catch (err) {
+    if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
+    addEntry('gm', 'ERROR', '⚠', `<p style="color:var(--orange)">${escapeHtml(err.message)}</p>`);
+  }
+
+  streaming = false;
+  el('send-btn').disabled = false;
+  el('input-area').focus();
+}
+
+// ── Concept Glossary ───────────────────────────────────────────────────────────
+
+const GLOSSARY = [
+  { term: 'Tempo', def: 'Your pace of executing your gameplan relative to opponents. Being "up on tempo" means your strategy is further along than others\' for the resources spent. Lost tempo compounds — a single slow round often means two slow rounds.' },
+  { term: 'Tech Sling', def: 'Using the Technology strategy card\'s secondary ability (when another player activates it) to research a technology for free, without spending your action. One of the most efficient plays in the game — watch for it.' },
+  { term: 'Tech Skip', def: 'Researching a technology without having all prerequisites. Costs 6 resources (or equivalent) instead of the normal cost. Sometimes worth it for a transformative tech, but rarely done lightly.' },
+  { term: 'Faction Wheel', def: 'Reading what each opponent faction is likely to do based on their abilities and resources. Predicting that Muaat will build a War Sun, or Nekro will push combat — this knowledge shapes your positioning decisions.' },
+  { term: 'Swing System', def: 'A contested system with high combined resources + influence that sits between two or more players. Worth fighting over economically. Swing systems are often the key contested territories that shape mid-game.' },
+  { term: 'Slice', def: 'Your section of the galaxy map, typically your home quadrant. Good slices have balanced resources + influence, at least one tech specialty planet, and accessible wormholes. Evaluated during setup.' },
+  { term: 'Opener', def: 'Your planned sequence of moves for Rounds 1–2. Experienced players have faction-specific openers — e.g. Sol: take Leadership, expand carriers, secure expansion planets. Having a plan from turn one beats improvising.' },
+  { term: 'Token Efficiency', def: 'Getting maximum value from each Command Token spent. A CC that expands your territory AND enables production is more efficient than one that just moves ships. Running out of tactics tokens mid-round is a painful lesson.' },
+  { term: 'Soft Block', def: 'Positioning ships to threaten a system without activating it. Forces opponents to either challenge your ships or route around them — using threat as a deterrent instead of committing to combat.' },
+  { term: 'Political Capital', def: 'Your accumulated goodwill, outstanding promises, and leverage with other players. Spent to ask for votes, secure trade deals, or negotiate non-aggression. Loses value if you betray deals.' },
+  { term: 'Mecatol Rush', def: 'Attempting to seize Mecatol Rex by Round 1 or 2. High risk (costs 6 influence to land troops), high reward (Imperial primary = 1 VP + objective reveal). Best for L1Z1X, Winnu, and Sol.' },
+  { term: 'Cobra Play', def: 'Attacking a player already under pressure from another opponent — exploiting divided attention and weakened defenses. Effective but makes you look opportunistic, which affects future diplomacy.' },
+  { term: 'Speaker Advantage', def: 'The tempo benefit of picking your strategy card first — you get first choice before anyone can take the card you need. Being Speaker is especially powerful in rounds where one card is clearly dominant.' },
+  { term: 'Back-fill', def: 'Securing systems you pass through during expansion so they can\'t be taken by neighbors while your main force advances. Neglecting back-fill creates undefended flanks.' },
+  { term: 'Passing Order', def: 'The sequence in which players pass in the Action Phase. Passing early can be strategic (save CCs for next round) or forced (you ran out of tokens). Passing last gives maximum reactive power.' },
+  { term: 'Objective Snipe', def: 'Completing a public objective that another player was working toward, by adjusting your plans at the last moment. Denies them a point and takes it yourself — powerful but burns political capital.' },
+  { term: 'Imperial Rider', def: 'An Action Card that lets you score a public objective during the Action Phase instead of waiting for Status Phase. Can score objectives you\'d otherwise miss, or score ahead of opponents.' },
+  { term: 'Tech Stack', def: 'Your current set of researched technologies and their synergies. Knowing which techs compound (e.g. Sling Relay + Carrier II for Sol) is core to long-term planning. A bad tech stack rarely recovers.' },
+  { term: 'Threat Management', def: 'Reading who is closest to winning and taking collective action to slow them. A player at 8+ VP who isn\'t stopped will often win. Identifying and communicating threats to other players is a key soft skill.' },
+  { term: 'Action Economy', def: 'The total number of meaningful actions you can take per round. More Command Tokens, more production capacity, and more efficient tech all improve it. Superior action economy is the most reliable path to winning.' },
+  { term: 'Flagship Race', def: 'When two players both rush to build their Flagships before the other. Flagships are so powerful that fielding one first often creates a decisive combat advantage. Usually decided by who has better production.' },
+  { term: 'Turtling', def: 'Playing overly defensively — fortifying your territory instead of expanding or scoring objectives. Usually loses TI4 because objectives require presence across the map, and defensive positions rarely score VP.' },
+  { term: 'Vote Manipulation', def: 'Using planet influence, promissory notes, or action cards to control Agenda Phase outcomes. Xxcha and Nekro Virus excel at this. Even one decisive vote swing can alter the game permanently.' },
+  { term: 'Combat Efficiency', def: 'Getting maximum hits per resource invested in your fleet. A well-teched fleet often beats a larger, cheaper fleet. This is why technology matters even for combat-focused factions — better stats compound.' },
+  { term: 'Deal', def: 'A negotiated exchange between players — Trade Goods, Commodities, Promissory Notes, votes, or strategic agreements. Deals are binding by honor only. Reputation for keeping deals is worth more than any single trade.' },
+  { term: 'Skips (Tech)', def: 'Paying extra resources to bypass tech prerequisites. Some strategies intentionally build "skip-friendly" slices where planets provide tech specialty symbols that offset the need to research prerequisite techs.' },
+  { term: 'Aggressor Tax', def: 'The political cost of being perceived as aggressive. Attacking players creates enemies and coalitions. Managing how aggressive you appear is as important as your actual military moves.' },
+];
+
+function buildGlossary() {
+  const list = el('glossary-list');
+  list.innerHTML = GLOSSARY.map(g =>
+    `<div class="glossary-item" data-term="${escapeHtml(g.term.toLowerCase())}" data-def="${escapeHtml(g.def.toLowerCase())}">
+      <div class="glossary-term">${escapeHtml(g.term)}</div>
+      <div class="glossary-def">${escapeHtml(g.def)}</div>
+    </div>`
+  ).join('');
+}
+
+// ── Objectives Panel ───────────────────────────────────────────────────────────
+
+function toggleObjectives() {
+  el('objectives-panel').classList.toggle('expanded');
+}
+
+function renderObjectives(objectives) {
+  if (!objectives || !objectives.length) return;
+  const body = el('obj-body');
+  const scored = objectives.filter(o => o.scored).length;
+  el('obj-count').textContent = `${scored}/${objectives.length} scored`;
+  body.innerHTML = objectives.map(obj => {
+    const typeClass = obj.type || 'stage1';
+    const typeLabel = { stage1: 'Stage I', stage2: 'Stage II', secret: 'Secret' }[typeClass] || 'Objective';
+    return `<div class="obj-item ${obj.scored ? 'scored' : ''}">
+      <div class="obj-type-badge ${typeClass}">${typeLabel}</div>
+      <div class="obj-info">
+        <div class="obj-name">${escapeHtml(obj.name)}</div>
+        <div class="obj-condition">${escapeHtml(obj.condition)}</div>
+      </div>
+      <div class="obj-right">
+        ${obj.scored
+          ? `<div class="obj-scored-badge">✓ SCORED</div>`
+          : `<div class="obj-progress">${escapeHtml(obj.playerProgress || '—')}</div>`}
+      </div>
+    </div>`;
+  }).join('');
+  // Auto-expand when new objective arrives
+  el('objectives-panel').classList.add('expanded');
+}
+
+// ── Standings / Threat Bar ─────────────────────────────────────────────────────
+
+function updateThreatBar() {
+  if (!currentState) return;
+  const bar = el('threat-bar');
+  const WIN_VP = 10;
+
+  const playerVp = currentState.player?.vp ?? 0;
+  const opponents = currentState.opponents || [];
+
+  // Build all entries: player first, then opponents
+  const allEntries = [
+    { label: 'YOU', vp: playerVp, isPlayer: true },
+    ...opponents.map(o => ({
+      label: (o.name || o.faction || 'OPP').split(' ').slice(-1)[0].substring(0, 7).toUpperCase(),
+      fullName: o.name || o.faction || 'Opponent',
+      vp: o.vp || 0,
+      isPlayer: false
+    }))
+  ];
+
+  const maxVp = Math.max(...allEntries.map(e => e.vp), 0);
+
+  bar.innerHTML = allEntries.map(entry => {
+    const vp = entry.vp;
+    const pct = Math.min((vp / WIN_VP) * 100, 100);
+    const isLeader = vp === maxVp && vp > 0;
+
+    let color, warnHtml;
+    if (entry.isPlayer) {
+      color = '#d4a843';
+      warnHtml = isLeader ? `<span class="threat-warn" style="color:${color}">LEADS</span>` : '';
+    } else if (vp >= 9)      { color = '#e84040'; warnHtml = `<span class="threat-warn" style="color:${color}">⚠ CRITICAL</span>`; }
+      else if (vp >= 8)      { color = '#e8521a'; warnHtml = `<span class="threat-warn" style="color:${color}">⚠ DANGER</span>`; }
+      else if (vp >= 7)      { color = '#d4a843'; warnHtml = isLeader ? `<span class="threat-warn" style="color:${color}">LEADS</span>` : `<span class="threat-warn" style="color:${color}">THREAT</span>`; }
+      else if (vp >= 5)      { color = '#c4cedf'; warnHtml = isLeader ? `<span class="threat-warn" style="color:${color}">LEADS</span>` : ''; }
+      else                   { color = '#4a5570'; warnHtml = ''; }
+
+    const title = entry.isPlayer ? `You — ${vp} VP` : `${entry.fullName} — ${vp} VP`;
+    return `<div class="threat-cell" title="${escapeHtml(title)}">
+      <span class="threat-opp-name" style="${entry.isPlayer ? 'color:var(--gold)' : ''}">${escapeHtml(entry.label)}</span>
+      <div class="threat-track"><div class="threat-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="threat-vp-label" style="color:${color}">${vp}</span>
+      ${warnHtml}
+    </div>`;
+  }).join('');
+
+  bar.style.display = 'flex';
+}
+
+// ── Reference Modal ────────────────────────────────────────────────────────────
+
+function showRefModal(tabId) {
+  el('ref-modal').classList.remove('hidden');
+  if (tabId) switchRefTab(tabId);
+}
+
+function switchRefTab(tabId) {
+  document.querySelectorAll('.ref-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+  document.querySelectorAll('.ref-tab-pane').forEach(p => p.classList.toggle('active', p.id === `ref-tab-${tabId}`));
+  if (tabId === 'glossary') el('glossary-search').focus();
+}
+
+el('ref-modal-close').addEventListener('click', () => el('ref-modal').classList.add('hidden'));
+el('ref-modal-backdrop').addEventListener('click', () => el('ref-modal').classList.add('hidden'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { el('ref-modal').classList.add('hidden'); closeFactionModal(); } });
+document.querySelectorAll('.ref-tab-btn').forEach(btn => btn.addEventListener('click', () => switchRefTab(btn.dataset.tab)));
+el('ref-btn').addEventListener('click', () => showRefModal('phases'));
+
+el('glossary-search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.glossary-item').forEach(item => {
+    const match = !q || item.dataset.term.includes(q) || item.dataset.def.includes(q);
+    item.classList.toggle('hidden', !match);
+  });
+});
+
+// ── Rules Reference Panel ──────────────────────────────────────────────────────
+
+let rulesStreaming = false;
+
+function toggleRulesPanel() {
+  const panel = el('rules-panel');
+  const btn = el('rules-btn');
+  const isHidden = panel.classList.toggle('hidden');
+  btn.classList.toggle('active', !isHidden);
+  if (!isHidden) el('rules-input').focus();
+}
+
+async function askRules() {
+  const input = el('rules-input');
+  const question = input.value.trim();
+  if (!question || rulesStreaming) return;
+  const answer = el('rules-answer');
+  answer.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  rulesStreaming = true;
+  el('rules-ask-btn').disabled = true;
+  try {
+    const res = await fetch('/api/rules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question })
+    });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulated = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      accumulated += decoder.decode(value, { stream: true });
+      answer.innerHTML = formatMarkdown(accumulated);
+    }
+  } catch(err) {
+    answer.innerHTML = `<p style="color:var(--orange)">${escapeHtml(err.message)}</p>`;
+  }
+  rulesStreaming = false;
+  el('rules-ask-btn').disabled = false;
+}
+
+el('rules-panel-close').addEventListener('click', () => {
+  el('rules-panel').classList.add('hidden');
+  el('rules-btn').classList.remove('active');
+});
+el('rules-ask-btn').addEventListener('click', askRules);
+el('rules-input').addEventListener('keydown', e => { if (e.key === 'Enter') askRules(); });
+el('rules-btn').addEventListener('click', toggleRulesPanel);
+
+// ── Faction Guide Modal ────────────────────────────────────────────────────────
+
+function showFactionModal() {
+  const faction = (currentState && currentState.faction) || selectedFaction;
+  if (!faction || !FACTIONS[faction]) return;
+  el('faction-modal-label').textContent = 'Faction Guide — ' + faction;
+  renderFactionDetail(faction, el('faction-modal-body'));
+  el('faction-modal').classList.remove('hidden');
+}
+
+function closeFactionModal() {
+  el('faction-modal').classList.add('hidden');
+}
+
+el('faction-modal-close').addEventListener('click', closeFactionModal);
+el('faction-modal-backdrop').addEventListener('click', closeFactionModal);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFactionModal(); });
+el('faction-badge').addEventListener('click', showFactionModal);
+
+el('new-game-btn').addEventListener('click', () => {
+  if (!confirm('Return to faction selection? Current game progress will be lost.')) return;
+  history = []; currentState = null; streaming = false; boardState = [];
+  if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
+  el('game-screen').classList.add('hidden');
+  el('faction-screen').classList.remove('hidden');
+  el('fs-start-btn').disabled = false;
+  el('fs-start-btn').textContent = 'Choose Faction';
+  document.title = 'TI4 — Faction Selection';
+});
+
+el('input-area').addEventListener('input', function() {
+  this.style.height = '';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+el('input-area').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// ── Boot ────────────────────────────────────────────────────────────────────────
+
+buildFactionList();
+buildGlossary();
+
+// If there's an existing in-progress game, skip straight to it
+(async () => {
+  try {
+    const res = await fetch('/api/state');
+    const state = await res.json();
+    if (state && state.faction && state.round > 0) {
+      if (state.board) { boardState = []; applyBoardDelta(state.board); }
+      currentState = state;
+      applyStateToUI(state);
+      // There's a saved game — ask if they want to continue
+      const resume = confirm(`Continue saved game as ${state.faction}?`);
+      if (resume) {
+        startGame(state.faction);
+        // Don't send opening message — let user type
+        el('log').innerHTML = '';
+        history = [];
+        addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`Welcome back, Commander. You are playing as the **${state.faction}**, Round ${state.round}, ${state.phase} phase. What would you like to do?`));
+        el('send-btn').disabled = false;
+        streaming = false;
+        if (boardState.length === 0) generateBoard();
+      }
+    }
+  } catch(e) { /* no saved state, show faction selection */ }
+})();
+</script>
+<div id="tile-tooltip"></div>
+</body>
+</html>
