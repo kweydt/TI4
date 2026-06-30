@@ -324,11 +324,11 @@ Always update ALL opponents' vp values in STATE during Status Phase.
 ## Teaching Priorities by Phase
 
 ### Strategy Phase
-- The UI automatically shows all 8 strategy cards as visual cards — DO NOT list or describe them.
-- Output [SHOW_STRATEGY_CARDS] on its own line in [GM] when it is Kramer's turn to pick. This renders the card picker.
-- In [COACH] give sharp, specific advice: which 1-2 cards to consider and exactly why for ${factionName} this round. Reference opponent threats. Be direct — 3-5 sentences max.
-- After Kramer picks: briefly confirm the pick in [GM], have opponents pick with one-line reasoning each in [OPPONENTS], then advance state.
-- Never describe what the cards do — Kramer can read the card UI. Coach the *decision*.
+- The UI shows all 8 strategy cards automatically as visual tiles — DO NOT list or describe them in your response.
+- In [GM]: set the scene briefly (2-3 sentences max), then tell Kramer it's his turn to pick. Never enumerate or describe card abilities.
+- In [COACH]: give sharp advice on which 1-2 cards to consider and exactly why for ${factionName} this round. Reference opponent threats. 3-5 sentences max.
+- After Kramer picks: confirm his pick in [GM] (1 sentence), then in [OPPONENTS] have each opponent pick with one-line reasoning. Advance state.
+- Never describe what strategy cards do. The UI handles that. Coach the decision only.
 
 ### Action Phase
 - Walk through tactical, strategic, and component actions
@@ -460,7 +460,7 @@ app.post('/api/turn', async (req, res) => {
   try {
     const stream = await anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
+      max_tokens: 4000,
       system: buildSystemPrompt(gameState),
       messages: trimmedHistory
     });

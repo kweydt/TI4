@@ -2305,11 +2305,7 @@ function parseResponse(fullText) {
   const oppMatch     = fullText.match(/\[OPPONENTS\]([\s\S]*?)(?=\[GM\]|\[COACH\]|\[CHOICES\]|\[DEBRIEF\]|<!--STATE|$)/);
   const choicesMatch = fullText.match(/\[CHOICES\]([\s\S]*?)(?=\[DEBRIEF\]|<!--STATE|$)/);
   const debriefMatch = fullText.match(/\[DEBRIEF\]([\s\S]*?)(?=<!--STATE|$)/);
-  if (gmMatch) {
-    const gmText = gmMatch[1].trim();
-    sections.showStrategyCards = /\[SHOW_STRATEGY_CARDS\]/i.test(gmText);
-    sections.gm = gmText.replace(/\[SHOW_STRATEGY_CARDS\]/gi, '').trim();
-  }
+  if (gmMatch) sections.gm = gmMatch[1].trim();
   if (coachMatch) sections.coach     = coachMatch[1].trim();
   if (oppMatch)   sections.opponents = oppMatch[1].trim();
   if (choicesMatch) {
@@ -2363,7 +2359,6 @@ function renderSections(sections) {
   if (sections.gm)        addEntry('gm',       'GAME MASTER', '⬡', formatMarkdown(sections.gm));
   if (sections.coach)     updateCoach(formatMarkdown(sections.coach));
   if (sections.opponents) addEntry('opponent', 'OPPONENTS',   '⬟', formatMarkdown(sections.opponents));
-  if (sections.showStrategyCards) renderStrategyCardPicker();
   if (sections.choices && sections.choices.length > 0) appendChoices(sections.choices);
   if (sections.debrief)   renderDebrief(sections.debrief);
 }
@@ -3140,6 +3135,16 @@ function finalizeStream(fullText) {
   } else {
     renderSections(sections);
   }
+  // Auto-show strategy card picker whenever player is in strategy phase and hasn't picked
+  maybeShowStrategyCards();
+}
+
+function maybeShowStrategyCards() {
+  if (!currentState) return;
+  if (currentState.phase !== 'strategy') return;
+  if (currentState.player?.strategyCard) return;
+  if (document.querySelector('.sc-picker')) return; // already showing
+  renderStrategyCardPicker();
 }
 
 function deepMerge(target, source) {
