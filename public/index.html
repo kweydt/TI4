@@ -429,6 +429,29 @@
     border-top: 1px solid var(--border);
     gap: 16px;
   }
+  #fs-opponent-count {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.05em;
+  }
+  #fs-opponent-count-buttons { display: flex; gap: 4px; }
+  .opp-count-btn {
+    width: 26px; height: 26px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    color: var(--dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .opp-count-btn:hover { border-color: var(--dim); color: var(--text); }
+  .opp-count-btn.active { background: rgba(212,168,67,0.15); border-color: var(--gold); color: var(--gold); }
 
   #fs-selected-label {
     font-family: var(--font-mono);
@@ -594,6 +617,11 @@
   .entry.player { border-color: rgba(212,168,67,0.3); }
   .entry.player .entry-head { border-color: rgba(212,168,67,0.2); }
   .entry.player .entry-icon, .entry.player .entry-who { color: var(--gold); }
+
+  /* Individual opponent turn cards */
+  #opponent-turns-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin: 2px 0 -2px 2px; }
+  .opp-turn-entry { opacity: 0; transform: translateY(4px); animation: oppTurnIn 0.35s ease forwards; }
+  @keyframes oppTurnIn { to { opacity: 1; transform: translateY(0); } }
 
   .verdict { display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; padding: 2px 7px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
   .verdict.good  { background: rgba(78,203,113,0.15); color: var(--green);  border: 1px solid rgba(78,203,113,0.4); }
@@ -1196,6 +1224,15 @@
 
   <div id="fs-footer">
     <div id="fs-selected-label">No faction selected</div>
+    <div id="fs-opponent-count">
+      Opponents:
+      <div id="fs-opponent-count-buttons">
+        <button class="opp-count-btn" data-count="2">2</button>
+        <button class="opp-count-btn active" data-count="3">3</button>
+        <button class="opp-count-btn" data-count="4">4</button>
+        <button class="opp-count-btn" data-count="5">5</button>
+      </div>
+    </div>
     <button id="fs-start-btn" disabled>Choose Faction</button>
   </div>
 </div>
@@ -1716,6 +1753,15 @@ const FACTION_GROUPS = [
 // ── Faction Selection UI ───────────────────────────────────────────────────────
 
 let selectedFaction = null;
+let selectedOpponentCount = 3;
+
+document.querySelectorAll('.opp-count-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.opp-count-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedOpponentCount = parseInt(btn.dataset.count);
+  });
+});
 
 function buildFactionList() {
   const list = el('fs-list');
@@ -2052,12 +2098,12 @@ el('fs-start-btn').addEventListener('click', async () => {
 
   localStorage.removeItem('ti4_state');
   localStorage.removeItem('ti4_history');
-  startGame(selectedFaction);
+  startGame(selectedFaction, selectedOpponentCount);
 });
 
 // ── Game Startup ────────────────────────────────────────────────────────────────
 
-function startGame(factionName) {
+function startGame(factionName, opponentCount) {
   const f = FACTIONS[factionName] || FACTIONS['Federation of Sol'];
 
   // Update game UI for chosen faction
@@ -2076,9 +2122,10 @@ function startGame(factionName) {
   history = [];
   streaming = false;
   phasesSeen = new Set();
-  currentState = { faction: factionName };
+  currentState = { faction: factionName, opponentCount: opponentCount || 3 };
 
-  const openingMessage = `Begin the game. I am playing as the ${factionName}. Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
+  const totalPlayers = (opponentCount || 3) + 1;
+  const openingMessage = `Begin the game. I am playing as the ${factionName} in a ${totalPlayers}-player game (${opponentCount || 3} opponents). Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
   sendTurn(openingMessage);
 }
 
@@ -2367,10 +2414,37 @@ function renderDebrief(raw) {
   scrollToBottom(true);
 }
 
+function renderOpponentTurns(raw) {
+  // Expect "### Name (Faction)" headers, one block per opponent. Split into individual turn cards.
+  const blocks = raw.split(/^###\s+(.+)$/m).slice(1); // alternating [header, body, header, body, ...]
+  if (blocks.length < 2) {
+    // Couldn't parse per-opponent structure — fall back to one combined entry
+    addEntry('opponent', 'OPPONENTS', '⬟', formatMarkdown(raw));
+    return;
+  }
+
+  const label = document.createElement('div');
+  label.id = 'opponent-turns-label';
+  label.textContent = 'Opponent Turns';
+  el('log').appendChild(label);
+
+  for (let i = 0; i < blocks.length; i += 2) {
+    const header = blocks[i].trim();
+    const body = (blocks[i + 1] || '').trim();
+    if (!body) continue;
+    const entry = document.createElement('div');
+    entry.className = 'entry opponent opp-turn-entry';
+    entry.style.animationDelay = `${(i / 2) * 0.18}s`;
+    entry.innerHTML = `<div class="entry-head"><span class="entry-icon">⬟</span><span class="entry-who">${escapeHtml(header)}</span></div><div class="entry-body">${formatMarkdown(body)}</div>`;
+    el('log').appendChild(entry);
+  }
+  scrollToBottom(true);
+}
+
 function renderSections(sections) {
   if (sections.gm)        addEntry('gm',       'GAME MASTER', '⬡', formatMarkdown(sections.gm));
   if (sections.coach)     updateCoach(formatMarkdown(sections.coach));
-  if (sections.opponents) addEntry('opponent', 'OPPONENTS',   '⬟', formatMarkdown(sections.opponents));
+  if (sections.opponents) renderOpponentTurns(sections.opponents);
   if (sections.choices && sections.choices.length > 0) appendChoices(sections.choices);
   if (sections.debrief)   renderDebrief(sections.debrief);
 }
@@ -3521,7 +3595,7 @@ function saveLocalState() {
 
     const resume = confirm(`Continue saved game as ${state.faction}?`);
     if (resume) {
-      startGame(state.faction);
+      startGame(state.faction, state.opponentCount);
       el('log').innerHTML = '';
       history = [];
       addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`Welcome back, Commander. You are playing as the **${state.faction}**, Round ${state.round}, ${state.phase} phase. What would you like to do?`));

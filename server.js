@@ -232,15 +232,24 @@ const OPPONENT_POOL = [
   { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], planets: ['Xxcha', 'Archon Ren'],          unitSummary: 'Standard Xxcha opening', technologies: ['Instinct Training', 'Nullification Field'], tradeGoods: 0, attitude: 'neutral' },
 ];
 
-function getOpponents(playerFaction) {
-  return OPPONENT_POOL.filter(o => o.faction !== playerFaction).slice(0, 3);
+function getOpponents(playerFaction, count) {
+  const n = Math.max(1, Math.min(OPPONENT_POOL.length, count || 3));
+  return OPPONENT_POOL.filter(o => o.faction !== playerFaction).slice(0, n);
+}
+
+function getDraftRule(totalPlayers) {
+  if (totalPlayers <= 4) {
+    return `VERIFIED RULE: in a ${totalPlayers}-player game, each player drafts TWO strategy cards (not one). All 8 cards get claimed — no leftovers, no trade-goods-on-unpicked-cards. Initiative for the Action Phase is the LOWER-numbered of a player's two cards. A player cannot pass in the Action Phase until both of their cards' primaries have been used.`;
+  }
+  return `VERIFIED RULE: in a ${totalPlayers}-player game, each player drafts only ONE strategy card. With 8 cards and ${totalPlayers} players, ${8 - totalPlayers} card(s) go unpicked — place 1 trade good on each unpicked card; whoever picks it in a later round's draft gains those accumulated trade goods. Initiative for the Action Phase is simply each player's one card number.`;
 }
 
 // ── System Prompt ──────────────────────────────────────────────────────────────
 
-function buildBasePrompt(factionName) {
+function buildBasePrompt(factionName, opponentCount) {
   const f = FACTIONS[factionName] || FACTIONS['Federation of Sol'];
-  const opponents = getOpponents(factionName);
+  const opponents = getOpponents(factionName, opponentCount);
+  const totalPlayers = opponents.length + 1;
 
   return `You are running a full game of Twilight Imperium 4th Edition for a first-time player named Kramer. You have two simultaneous roles:
 
@@ -287,7 +296,11 @@ Evaluate Kramer's decision. Use this exact format when evaluating:
 Then: what he did well, what he missed, what an expert would do differently. Keep it tight — 3–5 sentences max. Don't repeat what you said in [GM].
 
 [OPPONENTS]
-Narrate the opponent turns briefly. Each opponent gets 1–2 sentences. Include their reasoning so Kramer learns to read opponent strategy.
+Narrate each opponent's turn as its own separate entry so Kramer can see them acting individually, not as one blended paragraph. Strict format, one block per opponent:
+### Name (Faction)
+1-2 sentences: what they did and their reasoning, so Kramer learns to read opponent strategy.
+
+Repeat the "### Name (Faction)" header for every opponent who acted this turn, in the order they acted (initiative order during Action Phase, draft order during Strategy Phase). Do not merge multiple opponents under one header.
 
 [CHOICES]
 1. [First concrete option with brief reason why]
@@ -324,12 +337,12 @@ Always update ALL opponents' vp values in STATE during Status Phase.
 ## Teaching Priorities by Phase
 
 ### Strategy Phase
-- VERIFIED RULE: in a 4-player game, each player drafts TWO strategy cards (not one). All 8 cards get claimed — no leftovers, no trade-goods-on-unpicked-cards. Kramer's initiative for the Action Phase is his LOWER-numbered card.
+- ${getDraftRule(totalPlayers)}
 - The UI shows all 8 strategy cards automatically as visual tiles and tracks picks in state.player.strategyCards (array) — DO NOT list or describe card abilities in your response.
 - In [GM]: set the scene briefly (2-3 sentences max), then tell Kramer it's his turn to pick. Never enumerate or describe card abilities.
-- In [COACH]: give sharp advice for whichever pick Kramer is making (his 1st or 2nd card — check state.player.strategyCards length) and exactly why for ${factionName} this round, considering what's already taken. 3-5 sentences max.
-- After each Kramer pick: confirm it in [GM] (1 sentence), then in [OPPONENTS] have each opponent make their corresponding pick (their 1st, then later their 2nd) with one-line reasoning. Update state.opponents[].strategyCards.
-- Repeat until Kramer holds 2 cards. Only then move to the Action Phase.
+- In [COACH]: give sharp advice for whichever pick Kramer is making (check state.player.strategyCards length vs. how many cards each player gets this game) and exactly why for ${factionName} this round, considering what's already taken. 3-5 sentences max.
+- After each Kramer pick: confirm it in [GM] (1 sentence), then in [OPPONENTS] have each opponent make their corresponding pick with one-line reasoning. Update state.opponents[].strategyCards.
+- Repeat until Kramer holds the correct number of cards for a ${totalPlayers}-player game. Only then move to the Action Phase.
 - Never describe what strategy cards do. The UI handles that. Coach the decision only.
 
 ### Action Phase
@@ -377,15 +390,16 @@ Veteran TI4 player coaching a friend. Direct. Confident. Occasionally dry. Never
 
 // ── State Construction ──────────────────────────────────────────────────────────
 
-function buildInitialState(factionName) {
+function buildInitialState(factionName, opponentCount) {
   const f = FACTIONS[factionName] || FACTIONS['Federation of Sol'];
-  const opponents = getOpponents(factionName);
+  const opponents = getOpponents(factionName, opponentCount);
   return {
     round: 1,
     phase: 'strategy',
     turn: 0,
-    speakerIndex: Math.floor(Math.random() * (getOpponents(factionName).length + 1)),
+    speakerIndex: Math.floor(Math.random() * (opponents.length + 1)),
     faction: factionName,
+    opponentCount: opponents.length,
     player: {
       vp: 0,
       tradeGoods: 0,
@@ -426,7 +440,7 @@ function deepMerge(target, source) {
 
 function buildSystemPrompt(state) {
   const factionName = state.faction || 'Federation of Sol';
-  return `${buildBasePrompt(factionName)}
+  return `${buildBasePrompt(factionName, state.opponents?.length || state.opponentCount)}
 
 ## Current Game State
 Round: ${state.round} | Phase: ${state.phase}
@@ -457,7 +471,7 @@ app.post('/api/turn', async (req, res) => {
     return res.status(400).json({ error: 'history array required' });
   }
 
-  const gameState = (state && state.player) ? state : buildInitialState((state && state.faction) || 'Federation of Sol');
+  const gameState = (state && state.player) ? state : buildInitialState((state && state.faction) || 'Federation of Sol', state && state.opponentCount);
   const trimmedHistory = history.slice(-40);
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
