@@ -196,6 +196,18 @@ const FACTIONS = {
     ],
     units: { carriers: 2, cruisers: 2, destroyers: 1, infantry: 5, pds: 1, spaceDocks: 1, fighters: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
+  'Yssaril Tribes': {
+    description: 'Action card manipulators. No hand limit, draw more cards than anyone, and always have an answer. Win through information and timing, not combat.',
+    homeworlds: 'Iol (2R/3I), Xxehan (1R/2I)',
+    startingTech: ['Neural Motivator'],
+    commodities: 3,
+    keyAbility: 'SCHEMING: When you draw 1+ action cards, draw 1 additional, then discard 1 from your hand. CRAFTY: You can have any number of action cards — no hand limit, ever. STALL TACTICS: Action: Discard 1 action card from your hand.',
+    planets: [
+      { name: 'Iol', resources: 2, influence: 3, ready: true, trait: 'Cultural' },
+      { name: 'Xxehan', resources: 1, influence: 2, ready: true, trait: 'Hazardous' }
+    ],
+    units: { carriers: 2, cruisers: 1, fighters: 2, infantry: 5, pds: 1, spaceDocks: 1, destroyers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+  },
   'Nomad': {
     description: '(Prophecy of Kings) Triple agent value and steady Agenda Phase income. A flexible, opportunistic faction with no fixed homeworld to defend.',
     homeworlds: 'Arcturus (4R/4I)',
