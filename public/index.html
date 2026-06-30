@@ -717,6 +717,46 @@
   }
   #ref-btn:hover { color: var(--text); border-color: var(--dim); }
 
+  /* ── Generic collapsible sidebar panel (reused for fleet, hand, laws) ── */
+  .sb-panel { flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .sb-panel-hdr { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 34px; cursor: pointer; user-select: none; }
+  .sb-panel-title { font-family: var(--font-title); font-size: 10px; letter-spacing: 0.1em; color: var(--gold); text-transform: uppercase; }
+  .sb-panel-count { font-family: var(--font-mono); font-size: 9px; color: var(--dim); margin-left: 2px; }
+  .sb-panel-toggle { font-size: 10px; color: var(--dim); margin-left: auto; transition: transform 0.2s; }
+  .sb-panel.expanded .sb-panel-toggle { transform: rotate(180deg); }
+  .sb-panel-body { display: none; flex-direction: column; gap: 4px; padding: 4px 12px 10px; }
+  .sb-panel.expanded .sb-panel-body { display: flex; }
+
+  /* Fleet display */
+  .fleet-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fleet-chip { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); color: var(--dim); }
+  .fleet-chip.ship { border-color: rgba(74,158,255,0.3); color: var(--blue); }
+  .fleet-chip.capital { border-color: rgba(232,82,26,0.4); color: var(--orange); }
+  .fleet-chip.ground { border-color: rgba(78,203,113,0.3); color: var(--green); }
+  .fleet-chip.structure { border-color: rgba(212,168,67,0.3); color: var(--gold); }
+
+  /* Hand panel: action cards, secret objectives, promissory notes */
+  .hand-section-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); padding-bottom: 3px; border-bottom: 1px solid var(--border); margin-top: 4px; }
+  .hand-item { font-family: var(--font-body); font-size: 11px; color: var(--text); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .hand-item-name { color: var(--text); }
+  .hand-item-scored { color: var(--green); font-size: 9px; font-family: var(--font-mono); }
+  .hand-empty { font-family: var(--font-mono); font-size: 10px; color: var(--dim); font-style: italic; }
+  .secret-reveal-btn { background: none; border: 1px solid var(--border); color: var(--dim); font-family: var(--font-mono); font-size: 9px; padding: 2px 8px; border-radius: 3px; cursor: pointer; margin-top: 2px; }
+  .secret-reveal-btn:hover { color: var(--text); border-color: var(--dim); }
+  .secret-blurred { filter: blur(3px); pointer-events: none; }
+
+  /* Speaker indicator */
+  #speaker-row { display: flex; align-items: center; gap: 6px; padding: 3px 0 2px; font-family: var(--font-mono); font-size: 10px; color: var(--dim); }
+  #speaker-name { color: var(--gold); }
+  .speaker-crown { font-size: 11px; }
+
+  /* Laws panel */
+  .law-item { font-size: 11px; line-height: 1.45; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(155,93,229,0.3); background: rgba(155,93,229,0.06); color: var(--text); }
+
+  /* Strategy cards in play */
+  .strat-card-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .strat-card-chip { font-family: var(--font-mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--gold); color: var(--gold); background: rgba(212,168,67,0.08); }
+
   /* ── Opponent Threat Bar ── */
   #sidebar-standings { flex-shrink: 0; border-top: 1px solid var(--border); }
   #threat-bar {
@@ -1376,6 +1416,44 @@
         </div>
       </div>
 
+      <!-- Fleet panel -->
+      <div class="sb-panel" id="fleet-panel">
+        <div class="sb-panel-hdr" onclick="togglePanel('fleet-panel')">
+          <span class="sb-panel-title">⚓ Fleet</span>
+          <span class="sb-panel-count" id="fleet-count"></span>
+          <span class="sb-panel-toggle">▼</span>
+        </div>
+        <div class="sb-panel-body">
+          <div id="speaker-row"><span class="speaker-crown">♛</span> Speaker: <span id="speaker-name">—</span></div>
+          <div id="strat-card-row" class="strat-card-row" style="margin-bottom:4px"></div>
+          <div class="fleet-row" id="fleet-chips"></div>
+        </div>
+      </div>
+
+      <!-- Hand panel: action cards, secrets, promissory notes -->
+      <div class="sb-panel" id="hand-panel">
+        <div class="sb-panel-hdr" onclick="togglePanel('hand-panel')">
+          <span class="sb-panel-title">🃏 Hand</span>
+          <span class="sb-panel-count" id="hand-count"></span>
+          <span class="sb-panel-toggle">▼</span>
+        </div>
+        <div class="sb-panel-body" id="hand-body">
+          <div class="hand-empty">No cards yet.</div>
+        </div>
+      </div>
+
+      <!-- Active Laws panel -->
+      <div class="sb-panel" id="laws-panel">
+        <div class="sb-panel-hdr" onclick="togglePanel('laws-panel')">
+          <span class="sb-panel-title">⚖ Laws</span>
+          <span class="sb-panel-count" id="laws-count"></span>
+          <span class="sb-panel-toggle">▼</span>
+        </div>
+        <div class="sb-panel-body" id="laws-body">
+          <div class="hand-empty">No laws in effect.</div>
+        </div>
+      </div>
+
       <div id="objectives-panel">
         <div id="obj-header" onclick="toggleObjectives()">
           <span id="obj-title">◈ Public Objectives</span>
@@ -1561,7 +1639,8 @@ const FACTIONS = {
     ability: 'ORBITAL DROP: Spend 1 strategy pool token to place 2 infantry from reinforcements on a planet you control. VERSATILE: When you gain command tokens during the Status Phase, gain 1 additional token. Both reward fast, flexible deployment.',
     pros: ['Easiest to learn — mechanics are transparent', 'Strong infantry (6 to start)', 'Versatile means you out-pace everyone on command tokens', 'High commodities (4) for a non-trade faction'],
     cons: ['Single homeworld — less production redundancy than 2-planet factions', 'No flashy racial abilities to fall back on', 'Opponents can read your game plan easily'],
-    tip: 'Take Leadership (card 1) in Round 1. Three bonus command tokens gives you an immediate tempo advantage, and Versatile means every later token grab is even better. Expand early and often.'
+    tip: 'Take Leadership (card 1) in Round 1. Three bonus command tokens gives you an immediate tempo advantage, and Versatile means every later token grab is even better. Expand early and often.',
+    units: {"spaceDocks":1,"carriers":2,"destroyers":1,"cruisers":0,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":5,"pds":0},
   },
   'Emirates of Hacan': {
     abbr: 'HAC', color: '#d4a843', difficulty: 2, pok: false,
@@ -1573,7 +1652,8 @@ const FACTIONS = {
     ability: 'MASTERS OF TRADE: You don\'t spend a command token to resolve the Trade strategy card\'s secondary ability. GUILD SHIPS: You can negotiate transactions with players who aren\'t your neighbor. ARBITERS: Action cards can be exchanged as part of a transaction.',
     pros: ['Highest commodity income in the game (6)', 'Trade reach extends to non-neighbors — deals with anyone', 'Action-card trading creates unique diplomatic leverage', 'Sarween Tools reduces production costs immediately'],
     cons: ['Weak military — you rely on others to fight', 'Income depends on having willing trade partners', 'You need the Trade strategy card to maximize income', 'Poor at Mecatol Rex early'],
-    tip: 'Make early trade deals with everyone — Guild Ships means even non-neighbors are fair game. Take full advantage whenever anyone else plays the Trade card, since your secondary is free. Keep at least 2 partners friendly.'
+    tip: 'Make early trade deals with everyone — Guild Ships means even non-neighbors are fair game. Take full advantage whenever anyone else plays the Trade card, since your secondary is free. Keep at least 2 partners friendly.',
+    units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":0},
   },
   'Universities of Jol-Nar': {
     abbr: 'J-N', color: '#9b5de5', difficulty: 3, pok: false,
@@ -1585,7 +1665,8 @@ const FACTIONS = {
     ability: 'FRAGILE: −1 to the result of each of your unit\'s combat rolls. BRILLIANT: When you spend a command token to resolve the Technology strategy card\'s secondary, you may resolve the primary instead. ANALYTICAL: When you research a non-unit-upgrade technology, you may ignore 1 prerequisite.',
     pros: ['4 starting technologies — massive head start', 'Analytical lets you skip prerequisites other factions can\'t', 'Best faction in the late game', 'High commodity income (4)'],
     cons: ['Combat penalty (−1) makes early fights costly', 'Resource-poor homeworlds make expansion slow', 'Punished hard if you fall behind on tech', 'Steeper learning curve than Sol'],
-    tip: 'Research aggressively in Round 1 — Analytical makes every non-unit-upgrade tech cheaper to reach. Pick the Technology strategy card early to stay ahead. Avoid early combat until your tech advantage compounds.'
+    tip: 'Research aggressively in Round 1 — Analytical makes every non-unit-upgrade tech cheaper to reach. Pick the Technology strategy card early to stay ahead. Avoid early combat until your tech advantage compounds.',
+    units: {"spaceDocks":1,"carriers":2,"cruisers":0,"destroyers":0,"dreadnoughts":1,"warSuns":0,"fighters":1,"infantry":2,"pds":2},
   },
   'L1Z1X Mindnet': {
     abbr: 'L1Z', color: '#e8521a', difficulty: 2, pok: false,
@@ -1597,7 +1678,8 @@ const FACTIONS = {
     ability: 'ASSIMILATE: When you gain control of a planet, replace any PDS or space dock there with one of your own. HARROW: After each round of ground combat, your ships in the system may use Bombardment against the surviving defenders.',
     pros: ['Enormous resource production ([0.0.0] = 5R)', 'Assimilate turns every conquered planet into instant infrastructure', 'Harrow punishes failed defenses with free bombardment', 'Natural path to Mecatol Rex'],
     cons: ['Only 2 commodities — trade income is low', 'Combat-focused can burn command tokens fast', 'Little flexibility if the military plan fails', 'Telegraphs your strategy from turn 1'],
-    tip: 'Your massive home planet funds rapid fleet production. Push toward Mecatol Rex in Round 2 — Assimilate means captured planets come with instant infrastructure. Harrow rewards finishing ground combats decisively.'
+    tip: 'Your massive home planet funds rapid fleet production. Push toward Mecatol Rex in Round 2 — Assimilate means captured planets come with instant infrastructure. Harrow rewards finishing ground combats decisively.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":0,"destroyers":0,"dreadnoughts":1,"warSuns":0,"fighters":3,"infantry":5,"pds":1},
   },
   'Barony of Letnev': {
     abbr: 'LET', color: '#c4cedf', difficulty: 2, pok: false,
@@ -1609,7 +1691,8 @@ const FACTIONS = {
     ability: 'MUNITIONS RESERVES: At the start of each space combat round, spend 2 trade goods to re-roll any number of your dice. ARMADA: Your fleet supply limit is 2 higher than your fleet pool would normally allow.',
     pros: ['Start with a dreadnought — immediate military presence', 'Armada gives extra fleet capacity everywhere', 'Munitions Reserves turns trade goods into combat swings', 'Strong late-game fleet building'],
     cons: ['Low commodity count (2)', 'Fewer starting units than most factions', 'Needs economic setup before rolling', 'Combat-dependent playstyle'],
-    tip: 'Use your dreadnought to deter early aggression. Hoard trade goods for Munitions Reserves re-rolls — they can swing a close fight. Armada lets your fleets mass bigger than the token count alone suggests.'
+    tip: 'Use your dreadnought to deter early aggression. Hoard trade goods for Munitions Reserves re-rolls — they can swing a close fight. Armada lets your fleets mass bigger than the token count alone suggests.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":0,"destroyers":1,"dreadnoughts":1,"warSuns":0,"fighters":1,"infantry":3,"pds":0},
   },
   'Clan of Saar': {
     abbr: 'SAR', color: '#4ecb71', difficulty: 2, pok: false,
@@ -1621,7 +1704,8 @@ const FACTIONS = {
     ability: 'SCAVENGE: After you gain control of a planet, gain 1 trade good. NOMADIC: You can score objectives even if you don\'t control every planet in your home system. Chaos Mapping is a faction-specific technology you can research later for a wormhole shortcut.',
     pros: ['Scavenge turns expansion itself into trade goods', 'Nomadic frees you from defending every home planet', 'Two cruisers give strong early mobility', 'Hard to lock down strategically'],
     cons: ['Weak home system if it falls', 'Chaotic playstyle is hard to plan around', 'Needs to research Chaos Mapping for its wormhole bonus', 'Lower influence on home planets'],
-    tip: 'Expand aggressively — Scavenge means every new planet pays for itself. Nomadic lets you leave home planets undefended without losing objective eligibility. Research Chaos Mapping when you can for a mobility spike.'
+    tip: 'Expand aggressively — Scavenge means every new planet pays for itself. Nomadic lets you leave home planets undefended without losing objective eligibility. Research Chaos Mapping when you can for a mobility spike.',
+    units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":0},
   },
   'Naalu Collective': {
     abbr: 'NAA', color: '#4a9eff', difficulty: 2, pok: false,
@@ -1633,7 +1717,8 @@ const FACTIONS = {
     ability: 'TELEPATHIC: At the end of the Strategy Phase, place your "0" token on your strategy card — you go first in initiative order. FORESIGHT: When an opponent moves ships into a system containing your ships, you may retreat into an adjacent empty system using a strategy pool token.',
     pros: ['Telepathic guarantees you act first in the Action Phase', 'Foresight lets you dodge unfavorable fights for free', 'Strong political influence through token manipulation', 'Druaa gives solid resource production'],
     cons: ['Maaluuk has very little resource value — slow to fund a big fleet', 'Weak early combat before fighter/ship upgrades', 'Relies on reading the board to use Foresight well', 'Less raw firepower than aggressive factions'],
-    tip: 'Telepathic means you always act first in the Action Phase — use that tempo to grab key systems before anyone reacts. Foresight can save a fleet that wandered into a bad fight, so don\'t panic if you\'re intercepted.'
+    tip: 'Telepathic means you always act first in the Action Phase — use that tempo to grab key systems before anyone reacts. Foresight can save a fleet that wandered into a bad fight, so don\'t panic if you\'re intercepted.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":1,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1},
   },
   'Xxcha Kingdom': {
     abbr: 'XXC', color: '#4ecb71', difficulty: 2, pok: false,
@@ -1645,7 +1730,8 @@ const FACTIONS = {
     ability: 'PEACE ACCORDS: After you resolve the Diplomacy strategy card\'s primary or secondary ability, you may gain control of an adjacent unoccupied planet (not Mecatol Rex). QUASH: When an agenda is revealed, you may spend a strategy pool token to discard it and reveal a new one instead.',
     pros: ['Highest commodity income (4)', 'Quash lets you reroll unfavorable agendas before they\'re even voted on', 'Peace Accords turns Diplomacy picks into free planet grabs', 'Great for learning political mechanics'],
     cons: ['Weaker military than most factions', 'Single starting tech is a slow opening', 'Needs to accumulate VP through objectives, not combat', 'Punished if political strategies are countered'],
-    tip: 'Don\'t try to fight everyone. Take Diplomacy when you can — Peace Accords turns it into a free planet. Quash is your safety valve against an agenda that would hurt you badly; save a strategy token for it.'
+    tip: 'Don\'t try to fight everyone. Take Diplomacy when you can — Peace Accords turns it into a free planet. Quash is your safety valve against an agenda that would hurt you badly; save a strategy token for it.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":2,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1},
   },
   'Yin Brotherhood': {
     abbr: 'YIN', color: '#c4cedf', difficulty: 2, pok: false,
@@ -1657,7 +1743,8 @@ const FACTIONS = {
     ability: 'INDOCTRINATION: At the start of a ground combat, spend 2 influence to replace one of your opponent\'s participating infantry with one of your own. DEVOTION: After each space combat round, you may destroy one of your own cruisers or destroyers to deal 1 automatic hit to an enemy ship in the system.',
     pros: ['Single powerful homeworld (4R/4I)', 'Indoctrination can flip a ground invasion mid-fight', 'Devotion lets a losing fleet trade up before going down', 'Three carriers let you project force early'],
     cons: ['Low commodities (2)', 'No PDS at start — vulnerable to bombardment', 'Indoctrination costs influence, competing with your voting budget', 'Sacrificial mechanics require careful resource management'],
-    tip: 'Use Indoctrination surgically — converting a key defender mid-combat can flip an invasion you\'d otherwise lose. Devotion means even a losing space battle can cost your opponent dearly before your ships go down.'
+    tip: 'Use Indoctrination surgically — converting a key defender mid-combat can flip an invasion you\'d otherwise lose. Devotion means even a losing space battle can cost your opponent dearly before your ships go down.',
+    units: {"spaceDocks":1,"carriers":2,"cruisers":0,"destroyers":1,"dreadnoughts":0,"warSuns":0,"fighters":4,"infantry":4,"pds":0},
   },
   'Winnu': {
     abbr: 'WIN', color: '#9b5de5', difficulty: 3, pok: false,
@@ -1669,7 +1756,8 @@ const FACTIONS = {
     ability: 'BLOOD TIES: You don\'t need to spend influence to remove the Custodians Token from Mecatol Rex. RECLAMATION: After a tactical action where you gain control of Mecatol Rex, you may place a free PDS and space dock there from reinforcements.',
     pros: ['Blood Ties makes taking Mecatol Rex essentially free', 'Reclamation turns Mecatol Rex into an instant fortress and production hub', 'Winnu homeworld has 4 influence — strong voting power', 'Free choice of starting tech — high flexibility'],
     cons: ['Single homeworld makes production slow', 'Weakest military of any faction', 'Entirely Mecatol Rex dependent — if blocked, you fall behind', 'Opponents will often coordinate to remove you from Mecatol Rex'],
-    tip: 'Beeline for Mecatol Rex — Blood Ties removes the usual influence cost, so you can take it earlier than anyone else can afford to. Reclamation then turns it into a defensible production base in the same move.'
+    tip: 'Beeline for Mecatol Rex — Blood Ties removes the usual influence cost, so you can take it earlier than anyone else can afford to. Reclamation then turns it into a defensible production base in the same move.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":2,"pds":1},
   },
   'Mentak Coalition': {
     abbr: 'MEN', color: '#e8521a', difficulty: 3, pok: false,
@@ -1681,7 +1769,8 @@ const FACTIONS = {
     ability: 'AMBUSH: At the start of space combat, roll 1 die for up to 2 of your cruisers or destroyers in the system — each hit is assigned before normal combat begins. PILLAGE: After a neighbor gains trade goods or resolves a transaction, if they hold 3 or more, you may take one.',
     pros: ['Ambush gets free hits in before normal combat even starts', 'Pillage creates passive income from wealthy neighbors', 'Plasma Scoring adds even more pre-combat damage', 'Strong early naval presence'],
     cons: ['Low commodities (2)', 'Single homeworld — less production redundancy', 'Pillage only triggers against neighbors holding 3+ trade goods', 'Aggressive playstyle burns command tokens quickly'],
-    tip: 'Position cruisers and destroyers on likely invasion routes — Ambush fires before anyone else gets a shot, and Plasma Scoring stacks another free hit on top. Settle next to trade-heavy factions (Hacan, Xxcha) to maximize Pillage income.'
+    tip: 'Position cruisers and destroyers on likely invasion routes — Ambush fires before anyone else gets a shot, and Plasma Scoring stacks another free hit on top. Settle next to trade-heavy factions (Hacan, Xxcha) to maximize Pillage income.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":2,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1},
   },
   'Nekro Virus': {
     abbr: 'NEK', color: '#9b5de5', difficulty: 3, pok: false,
@@ -1693,7 +1782,8 @@ const FACTIONS = {
     ability: 'GALACTIC THREAT: You cannot vote on agendas, but you may predict an outcome aloud — if correct, steal 1 technology from a player who voted that way. TECHNOLOGICAL SINGULARITY: When you destroy an opponent\'s unit in combat, you may steal 1 of their technologies. PROPAGATION: You cannot research technology normally — whenever you would, gain 3 command tokens instead.',
     pros: ['Two space docks at start — huge production capacity', 'Technological Singularity turns combat wins into instant tech', 'Galactic Threat rewards reading the table during votes', 'Extremely unpredictable to play against'],
     cons: ['Single home planet (4R/0I) — no influence at all', 'Cannot vote on agendas — no political leverage', 'Propagation means you never research tech the normal way', 'Steep learning curve — almost every interaction is an exception'],
-    tip: 'Pick fights specifically to trigger Technological Singularity against the most tech-advanced opponent. Remember Propagation converts what would be research into command tokens instead — plan your economy around tokens, not tech trees.'
+    tip: 'Pick fights specifically to trigger Technological Singularity against the most tech-advanced opponent. Remember Propagation converts what would be research into command tokens instead — plan your economy around tokens, not tech trees.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":0,"dreadnoughts":1,"warSuns":0,"fighters":2,"infantry":2,"pds":0},
   },
   'Embers of Muaat': {
     abbr: 'MUA', color: '#e8521a', difficulty: 3, pok: false,
@@ -1705,7 +1795,8 @@ const FACTIONS = {
     ability: 'STAR FORGE: Spend 1 strategy pool token to place 2 fighters or 1 destroyer from reinforcements in a system containing your War Sun. GASHLAI PHYSIOLOGY: Your ships can move through supernovas as if they were empty space.',
     pros: ['War Sun is the strongest combat unit in the game', 'High commodities (4) fund early development', 'Plasma Scoring adds free hits before combat starts', 'Gashlai Physiology opens movement routes other factions can\'t use'],
     cons: ['Everything depends on getting your War Sun operational', 'Single home planet is exposed', 'Slow to get started — War Sun takes time to build', 'A destroyed War Sun often loses the game'],
-    tip: 'Get your War Sun built before Round 3. Until then, play defensively. Once it\'s online, use Star Forge to reinforce it for free, and route through supernovas opponents think are impassable.'
+    tip: 'Get your War Sun built before Round 3. Until then, play defensively. Once it\'s online, use Star Forge to reinforce it for free, and route through supernovas opponents think are impassable.',
+    units: {"spaceDocks":1,"carriers":0,"cruisers":0,"destroyers":0,"dreadnoughts":0,"warSuns":1,"fighters":2,"infantry":4,"pds":0},
   },
   'Ghosts of Creuss': {
     abbr: 'GHO', color: '#4a9eff', difficulty: 3, pok: false,
@@ -1717,7 +1808,8 @@ const FACTIONS = {
     ability: 'QUANTUM ENTANGLEMENT: You treat all systems containing an alpha or beta wormhole as adjacent to each other. SLIPSTREAM: +1 move value for any of your ships that start movement in your home system or a wormhole system.',
     pros: ['Wormhole network creates unparalleled mobility', 'High commodities (4) and a strong homeworld', 'Slipstream stacks with wormhole jumps for huge effective range', 'Strike from positions opponents can\'t predict'],
     cons: ['Home system sits behind the Creuss Gate — risky if isolated', 'Requires deep map awareness to use effectively', 'Complex to play well — reading the board matters more than for most factions', 'Steepest learning curve for map control'],
-    tip: 'Treat every alpha/beta wormhole on the board as effectively adjacent to your home system. Slipstream means ships launching from a wormhole system move further than opponents expect — use that extra reach to strike where they aren\'t looking.'
+    tip: 'Treat every alpha/beta wormhole on the board as effectively adjacent to your home system. Slipstream means ships launching from a wormhole system move further than opponents expect — use that extra reach to strike where they aren\'t looking.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":0,"destroyers":2,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":0},
   },
   'Arborec': {
     abbr: 'ARB', color: '#4ecb71', difficulty: 3, pok: false,
@@ -1729,7 +1821,8 @@ const FACTIONS = {
     ability: 'MITOSIS: Your space docks cannot produce infantry. Instead, at the start of each Status Phase, place 1 infantry from your reinforcements on any planet you control.',
     pros: ['Mitosis gives you free infantry every round, no production cost', 'Late-game army size compounds without spending resources', 'Magen Defense Grid: your PDS fire at ships during Space Cannon Offense', 'Strong defensive game — planets with infantry are expensive to take'],
     cons: ['Slowest start of any faction — Mitosis takes rounds to compound', 'Cannot produce infantry from space docks at all', 'Combat stats are ordinary — you win through attrition and numbers', 'Vulnerable to early pressure before infantry build up'],
-    tip: 'Spread control across planets in Round 1 — Mitosis gives you 1 free infantry per Status Phase on any planet you control, so more controlled planets means faster compounding. Don\'t rush combat; let your numbers advantage build first.'
+    tip: 'Spread control across planets in Round 1 — Mitosis gives you 1 free infantry per Status Phase on any planet you control, so more controlled planets means faster compounding. Don\'t rush combat; let your numbers advantage build first.',
+    units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":1},
   },
   "Sardakk N'orr": {
     abbr: 'SAR', color: '#c4cedf', difficulty: 3, pok: false,
@@ -1741,7 +1834,8 @@ const FACTIONS = {
     ability: "+1 to every combat roll. That's it. No action card abilities. No racial tech. No diplomatic tools. Every other faction has something you don't. Win through fundamental excellence.",
     pros: ['+1 combat roll is massive over a long game', 'Forces mastery of TI4 fundamentals', 'Exotrireme dreadnoughts deal damage before combat', 'Extremely satisfying when it works'],
     cons: ['No starting technology — severely handicapped Round 1', 'No racial abilities to fall back on', 'The weakest faction in the game in most situations', 'Requires extensive TI4 experience to compete'],
-    tip: 'Not recommended for first-time players. If you choose this, accept that you\'ll lose — and learn the rules deeply. Technology is your first priority every single turn.'
+    tip: 'Not recommended for first-time players. If you choose this, accept that you\'ll lose — and learn the rules deeply. Technology is your first priority every single turn.',
+    units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":0,"infantry":5,"pds":1},
   },
   'Yssaril Tribes': {
     abbr: 'YSS', color: '#4ecb71', difficulty: 2, pok: false,
@@ -1753,7 +1847,8 @@ const FACTIONS = {
     ability: 'SCHEMING: When you draw 1 or more action cards, draw 1 additional action card, then discard 1 from your hand. CRAFTY: You can have any number of action cards. Game effects cannot prevent you from using this ability. STALL TACTICS: Action — discard 1 action card from your hand.',
     pros: ['Unlimited action card hand size — no cap, ever', 'Scheming means every card draw is slightly better than for anyone else', 'Stall Tactics turns a dead card into a useful action', 'Enormous flexibility — answers for almost any situation'],
     cons: ['Only 1 starting technology — slow tech path', 'Value depends heavily on what action cards you draw', 'Manipulator reputation makes you a political target', 'Requires knowing what all the action cards do to get full value'],
-    tip: 'Hoard action cards until the right moment — Crafty means you never have to discard from hand limit. Scheming gives you a small but compounding edge every Status Phase. Stall Tactics is most valuable when you need to pass but want to appear active.'
+    tip: 'Hoard action cards until the right moment — Crafty means you never have to discard from hand limit. Scheming gives you a small but compounding edge every Status Phase. Stall Tactics is most valuable when you need to pass but want to appear active.',
+    units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":5,"pds":1},
   },
   'Nomad': {
     abbr: 'NOM', color: '#d4a843', difficulty: 3, pok: true,
@@ -1765,7 +1860,8 @@ const FACTIONS = {
     ability: 'THE COMPANY: You start with 3 faction agents instead of the usual 1, giving you more simultaneous agent abilities active at once. FUTURE SIGHT: During the Agenda Phase, after an outcome you voted for or predicted resolves, gain 1 trade good.',
     pros: ['Strong single homeworld (4R/4I)', 'The Company means 3x the usual agent value', 'Future Sight turns smart voting into steady trade good income', 'High commodities (4)'],
     cons: ['Single home planet — no redundancy if attacked', 'Agent-based value requires knowing PoK leader mechanics well', 'Complex timing windows for scoring abilities', 'Requires PoK expansion'],
-    tip: 'Lean on The Company\'s extra agents for tempo plays other factions can\'t match. Vote with the table\'s likely outcome when you can to farm Future Sight\'s trade goods reliably.'
+    tip: 'Lean on The Company\'s extra agents for tempo plays other factions can\'t match. Vote with the table\'s likely outcome when you can to farm Future Sight\'s trade goods reliably.',
+    units: {"spaceDocks":1,"carriers":2,"cruisers":0,"destroyers":2,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1,"flagships":1},
   },
   'Mahact Gene-Sorcerers': {
     abbr: 'MAH', color: '#d4a843', difficulty: 3, pok: true,
@@ -1777,7 +1873,8 @@ const FACTIONS = {
     ability: 'EDICT: When you win a combat, place 1 command token from your opponent\'s reinforcements into your fleet pool — it raises your fleet limit but can\'t be redistributed. IMPERIA: While an opponent\'s command token sits in your fleet pool, you may use that player\'s unlocked commander ability. HUBRIS: You purge your Alliance promissory note during setup, and no one can give you theirs.',
     pros: ['5 influence on Ixth = enormous voting power', 'Edict turns combat wins into a permanently bigger fleet', 'Imperia can grant access to powerful enemy commander abilities', 'Bio-Stims gives leaders a recovery ability'],
     cons: ['Complex — requires tracking which opponents\' tokens sit in your fleet pool', 'Aggressive play necessary to trigger Edict', 'Heavily targeted because of their power level', 'Requires PoK expansion'],
-    tip: 'Win combats deliberately to grow your fleet pool via Edict — every captured token is permanent. Watch which commanders you unlock access to through Imperia; a strong enemy commander ability can reshape your whole game plan.'
+    tip: 'Win combats deliberately to grow your fleet pool via Edict — every captured token is permanent. Watch which commanders you unlock access to through Imperia; a strong enemy commander ability can reshape your whole game plan.',
+    units: {"spaceDocks":0,"carriers":1,"cruisers":1,"destroyers":1,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":3,"pds":1,"flagships":1},
   },
 };
 
@@ -1941,6 +2038,15 @@ function renderFactionDetail(key, container) {
       </div>
       <div class="fs-tech-row">${techHtml}</div>
     </div>
+
+    ${f.units ? `
+    <div>
+      <div class="fs-section-title" style="display:flex;align-items:center">
+        Starting Fleet
+        ${tipIcon('These are the exact units you deploy from at game start.\nAll placed in your home system unless otherwise specified.')}
+      </div>
+      <div class="fleet-row">${renderFleetChips(f.units)}</div>
+    </div>` : ''}
 
     <div>
       <div class="fs-section-title" style="display:flex;align-items:center">
@@ -2199,7 +2305,13 @@ function startGame(factionName, opponentCount) {
   history = [];
   streaming = false;
   phasesSeen = new Set();
-  currentState = { faction: factionName, opponentCount: opponentCount || 3 };
+  const fData = FACTIONS[factionName] || {};
+  currentState = {
+    faction: factionName,
+    opponentCount: opponentCount || 3,
+    speakerIndex: Math.floor(Math.random() * ((opponentCount || 3) + 1)),
+    player: { units: fData.units ? { ...fData.units } : {}, strategyCards: [], actionCards: [], secretObjectives: [], promissoryNotes: [] }
+  };
 
   const totalPlayers = (opponentCount || 3) + 1;
   const openingMessage = `Begin the game. I am playing as the ${factionName} in a ${totalPlayers}-player game (${opponentCount || 3} opponents). Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
@@ -2340,6 +2452,103 @@ function renderPlanets(planets) {
   ).join('');
 }
 
+function togglePanel(id) {
+  document.getElementById(id).classList.toggle('expanded');
+}
+
+// ── Unit chip helpers ────────────────────────────────────────────────────────
+const UNIT_LABELS = {
+  spaceDocks:'SD', carriers:'CA', cruisers:'CR', destroyers:'DD',
+  dreadnoughts:'DN', warSuns:'WS', fighters:'FTR', infantry:'INF', pds:'PDS', flagships:'FL'
+};
+const UNIT_CLASS = {
+  spaceDocks:'structure', carriers:'ship', cruisers:'ship', destroyers:'ship',
+  dreadnoughts:'capital', warSuns:'capital', fighters:'ship', infantry:'ground', pds:'structure', flagships:'capital'
+};
+
+function renderFleetChips(units) {
+  if (!units) return '';
+  return Object.entries(units)
+    .filter(([,n]) => n > 0)
+    .map(([k,n]) => `<span class="fleet-chip ${UNIT_CLASS[k]||''}">${n} ${UNIT_LABELS[k]||k}</span>`)
+    .join('');
+}
+
+function renderFleetPanel(state) {
+  // Speaker
+  const all = [state.faction, ...(state.opponents||[]).map(o=>o.name)];
+  const speaker = all[state.speakerIndex ?? 0] || state.faction;
+  el('speaker-name').textContent = speaker;
+
+  // Strategy cards
+  const stratRow = el('strat-card-row');
+  const cards = state.player?.strategyCards || [];
+  stratRow.innerHTML = cards.length
+    ? cards.map(c => `<span class="strat-card-chip">${c}</span>`).join('')
+    : '';
+
+  // Units
+  el('fleet-chips').innerHTML = renderFleetChips(state.player?.units) || '<span class="hand-empty">No fleet data yet.</span>';
+  el('fleet-count').textContent = '';
+}
+
+function renderHandPanel(state) {
+  const p = state.player || {};
+  const actionCards = p.actionCards || [];
+  const secrets = p.secretObjectives || [];
+  const proms = p.promissoryNotes || [];
+  const total = actionCards.length + secrets.length + proms.length;
+  el('hand-count').textContent = total ? `(${total})` : '';
+
+  let html = '';
+
+  // Action Cards
+  html += `<div class="hand-section-label">Action Cards (${actionCards.length})</div>`;
+  if (actionCards.length) {
+    html += actionCards.map(c => `<div class="hand-item"><span class="hand-item-name">${escapeHtml(c)}</span></div>`).join('');
+  } else {
+    html += `<div class="hand-empty">None in hand.</div>`;
+  }
+
+  // Secret Objectives
+  html += `<div class="hand-section-label" style="margin-top:6px">Secret Objectives (${secrets.length})</div>`;
+  if (secrets.length) {
+    html += `<button class="secret-reveal-btn" onclick="toggleSecrets(this)">👁 Reveal</button>`;
+    html += `<div class="secret-blurred" id="secret-list">` +
+      secrets.map(s => `<div class="hand-item"><span class="hand-item-name">${escapeHtml(s.name||s)}</span>${s.scored ? ` <span class="hand-item-scored">✓ scored</span>` : ''}</div>`).join('') +
+      `</div>`;
+  } else {
+    html += `<div class="hand-empty">None drawn yet.</div>`;
+  }
+
+  // Promissory Notes
+  html += `<div class="hand-section-label" style="margin-top:6px">Promissory Notes (${proms.length})</div>`;
+  if (proms.length) {
+    html += proms.map(n => `<div class="hand-item"><span class="hand-item-name">${escapeHtml(n)}</span></div>`).join('');
+  } else {
+    html += `<div class="hand-empty">None held.</div>`;
+  }
+
+  el('hand-body').innerHTML = html;
+  if (total > 0) document.getElementById('hand-panel').classList.add('expanded');
+}
+
+function toggleSecrets(btn) {
+  const list = document.getElementById('secret-list');
+  if (!list) return;
+  const hidden = list.classList.toggle('secret-blurred');
+  btn.textContent = hidden ? '👁 Reveal' : '🙈 Hide';
+}
+
+function renderLawsPanel(laws) {
+  const count = laws?.length || 0;
+  el('laws-count').textContent = count ? `(${count})` : '';
+  el('laws-body').innerHTML = count
+    ? laws.map(l => `<div class="law-item">${escapeHtml(l)}</div>`).join('')
+    : `<div class="hand-empty">No laws in effect.</div>`;
+  if (count > 0) document.getElementById('laws-panel').classList.add('expanded');
+}
+
 function applyStateToUI(state) {
   if (!state) return;
   if (state.round) el('round-badge').textContent = `ROUND ${state.round}`;
@@ -2357,6 +2566,9 @@ function applyStateToUI(state) {
   }
   if (state.mecatolControlled) el('hex-mecatol').style.stroke = '#d4a843';
   if (state.publicObjectives) renderObjectives(state.publicObjectives);
+  renderFleetPanel(state);
+  renderHandPanel(state);
+  renderLawsPanel(state.activeLaws);
   updateThreatBar();
 }
 

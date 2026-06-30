@@ -21,7 +21,7 @@ const FACTIONS = {
     planets: [
       { name: 'Jord', resources: 4, influence: 2, ready: true, trait: 'Cultural' }
     ],
-    units: { carriers: 3, destroyers: 1, fighters: 3, infantry: 6, pds: 1, spaceDocks: 1, cruisers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:2, cruisers:0, destroyers:1, dreadnoughts:0, warSuns:0, fighters:3, infantry:5, pds:0 }
   },
   'Emirates of Hacan': {
     description: 'Masters of trade and negotiation. Economic dominance through commodities, backroom deals, and controlling the flow of resources across the galaxy.',
@@ -34,7 +34,7 @@ const FACTIONS = {
       { name: 'Kamdorn', resources: 0, influence: 1, ready: true, trait: 'Cultural' },
       { name: 'Hercant', resources: 1, influence: 1, ready: true, trait: 'Hazardous' }
     ],
-    units: { carriers: 2, destroyers: 2, cruisers: 1, fighters: 3, infantry: 4, pds: 0, spaceDocks: 1, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:2, cruisers:1, destroyers:0, dreadnoughts:0, warSuns:0, fighters:2, infantry:4, pds:0 }
   },
   'Universities of Jol-Nar': {
     description: 'The premier tech faction. Start with 4 technologies and research faster than anyone. Fragile early but terrifying in the late game when tech advantages compound.',
@@ -46,7 +46,7 @@ const FACTIONS = {
       { name: 'Jol', resources: 1, influence: 2, ready: true, trait: 'Industrial' },
       { name: 'Nar', resources: 2, influence: 3, ready: true, trait: 'Industrial' }
     ],
-    units: { carriers: 2, destroyers: 1, dreadnoughts: 1, fighters: 2, infantry: 3, pds: 2, spaceDocks: 1, cruisers: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:2, cruisers:0, destroyers:0, dreadnoughts:1, warSuns:0, fighters:1, infantry:2, pds:2 }
   },
   'L1Z1X Mindnet': {
     description: 'Pure military aggression. Upgraded Dreadnoughts, Assault Cannons, and a Flagship that instills dread. Expand fast, threaten everyone, control the board through fear.',
@@ -57,7 +57,7 @@ const FACTIONS = {
     planets: [
       { name: '[0.0.0]', resources: 5, influence: 0, ready: true, trait: 'Industrial' }
     ],
-    units: { carriers: 2, destroyers: 1, fighters: 3, infantry: 5, pds: 1, spaceDocks: 1, cruisers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:0, destroyers:0, dreadnoughts:1, warSuns:0, fighters:3, infantry:5, pds:1 }
   },
   'Barony of Letnev': {
     description: 'Wealthy military power. Start with a Dreadnought and strong economy. Compensates for fewer units with Sustain Damage and economic bonuses.',
@@ -69,7 +69,7 @@ const FACTIONS = {
       { name: 'Arc Prime', resources: 4, influence: 0, ready: true, trait: 'Industrial' },
       { name: 'Wren Terra', resources: 2, influence: 1, ready: true, trait: 'Hazardous' }
     ],
-    units: { carriers: 1, destroyers: 1, dreadnoughts: 1, fighters: 3, infantry: 3, pds: 1, spaceDocks: 1, cruisers: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:0, destroyers:1, dreadnoughts:1, warSuns:0, fighters:1, infantry:3, pds:0 }
   },
   'Clan of Saar': {
     description: 'Nomadic raiders. Expansion pays for itself in trade goods, and you can score objectives without defending every home planet. Punishes static players.',
@@ -81,7 +81,7 @@ const FACTIONS = {
       { name: 'Lisis II', resources: 1, influence: 0, ready: true, trait: 'Cultural' },
       { name: 'Ragh', resources: 2, influence: 1, ready: true, trait: 'Hazardous' }
     ],
-    units: { carriers: 2, cruisers: 2, fighters: 2, infantry: 4, pds: 1, spaceDocks: 1, destroyers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:2, cruisers:1, destroyers:0, dreadnoughts:0, warSuns:0, fighters:2, infantry:4, pds:0 }
   },
   'Naalu Collective': {
     description: 'Fighter swarm and political manipulation. The "0" initiative card lets you always go first in Action Phase. Devastating fighter upgrades make your swarms lethal.',
@@ -93,7 +93,7 @@ const FACTIONS = {
       { name: 'Maaluuk', resources: 0, influence: 2, ready: true, trait: 'Cultural' },
       { name: 'Druaa', resources: 3, influence: 1, ready: true, trait: 'Industrial' }
     ],
-    units: { carriers: 2, cruisers: 1, destroyers: 1, fighters: 3, infantry: 4, spaceDocks: 1, pds: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:1, destroyers:1, dreadnoughts:0, warSuns:0, fighters:3, infantry:4, pds:1 }
   },
   'Xxcha Kingdom': {
     description: 'Political powerhouse. Reroll unfavorable agendas, grab free planets through diplomacy. Win through accumulation and patience, not combat.',
@@ -105,7 +105,7 @@ const FACTIONS = {
       { name: 'Archon Ren', resources: 2, influence: 3, ready: true, trait: 'Cultural' },
       { name: 'Archon Tau', resources: 1, influence: 1, ready: true, trait: 'Industrial' }
     ],
-    units: { carriers: 2, cruisers: 1, destroyers: 1, fighters: 3, infantry: 4, pds: 1, spaceDocks: 1, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:2, destroyers:0, dreadnoughts:0, warSuns:0, fighters:3, infantry:4, pds:1 }
   },
   'Yin Brotherhood': {
     description: 'Religious zealots with powerful conversion abilities. Sacrifice ships to devastating effect. Difficult to fight because they turn your own units against you.',
@@ -116,7 +116,7 @@ const FACTIONS = {
     planets: [
       { name: 'Darien', resources: 4, influence: 4, ready: true, trait: 'Cultural' }
     ],
-    units: { carriers: 3, destroyers: 1, fighters: 4, infantry: 4, spaceDocks: 1, pds: 0, cruisers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:2, cruisers:0, destroyers:1, dreadnoughts:0, warSuns:0, fighters:4, infantry:4, pds:0 }
   },
   'Winnu': {
     description: 'The Mecatol Rex specialists. Your entire game revolves around a single path to the center of the galaxy. Brutal efficiency when on track — helpless when off it.',
@@ -127,7 +127,7 @@ const FACTIONS = {
     planets: [
       { name: 'Winnu', resources: 3, influence: 4, ready: true, trait: 'Cultural' }
     ],
-    units: { carriers: 1, cruisers: 1, destroyers: 1, fighters: 2, infantry: 2, pds: 1, spaceDocks: 1, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:1, destroyers:0, dreadnoughts:0, warSuns:0, fighters:2, infantry:2, pds:1 }
   },
   'Mentak Coalition': {
     description: 'Pirates and ambushers. Fire before anyone else, steal trade goods, and leverage Action Cards better than anyone. Punishes passive players hard.',
@@ -138,7 +138,7 @@ const FACTIONS = {
     planets: [
       { name: 'Moll Primus', resources: 4, influence: 1, ready: true, trait: 'Industrial' }
     ],
-    units: { carriers: 2, cruisers: 2, fighters: 3, infantry: 4, pds: 1, spaceDocks: 1, destroyers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:2, destroyers:0, dreadnoughts:0, warSuns:0, fighters:3, infantry:4, pds:1 }
   },
   'Nekro Virus': {
     description: 'Completely unique mechanics. Steal technology through combat and political prediction instead of researching it normally. Fundamentally different from every other faction.',
@@ -149,7 +149,7 @@ const FACTIONS = {
     planets: [
       { name: 'Mordai II', resources: 4, influence: 0, ready: true, trait: 'Hazardous' }
     ],
-    units: { carriers: 2, cruisers: 2, destroyers: 2, fighters: 3, infantry: 2, spaceDocks: 2, pds: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:1, destroyers:0, dreadnoughts:1, warSuns:0, fighters:2, infantry:2, pds:0 }
   },
   'Embers of Muaat': {
     description: 'One trick, and that trick is a War Sun. Build the most powerful unit in the game and use it to obliterate everything. Extremely high variance.',
@@ -160,7 +160,7 @@ const FACTIONS = {
     planets: [
       { name: 'Muaat', resources: 4, influence: 1, ready: true, trait: 'Hazardous' }
     ],
-    units: { warsuns: 1, fighters: 2, infantry: 4, spaceDocks: 1, carriers: 0, destroyers: 0, cruisers: 0, dreadnoughts: 0, flagships: 0, pds: 0 }
+    units: { spaceDocks:1, carriers:0, cruisers:0, destroyers:0, dreadnoughts:0, warSuns:1, fighters:2, infantry:4, pds:0 }
   },
   'Ghosts of Creuss': {
     description: 'Wormhole manipulators. Move through wormholes others can\'t use and reshape the galaxy\'s geography to your advantage. Complex but uniquely powerful.',
@@ -171,7 +171,7 @@ const FACTIONS = {
     planets: [
       { name: 'Creuss', resources: 4, influence: 2, ready: true, trait: 'Cultural' }
     ],
-    units: { carriers: 2, destroyers: 2, fighters: 2, infantry: 4, pds: 1, spaceDocks: 1, cruisers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:0, destroyers:2, dreadnoughts:0, warSuns:0, fighters:2, infantry:4, pds:0 }
   },
   'Arborec': {
     description: 'Biological production. Grow infantry anywhere you have units — but at a price. Every infantry is also a space dock. Slow to start, overwhelming in the late game.',
@@ -182,7 +182,7 @@ const FACTIONS = {
     planets: [
       { name: 'Nestphar', resources: 3, influence: 2, ready: true, trait: 'Hazardous' }
     ],
-    units: { carriers: 2, cruisers: 1, fighters: 2, infantry: 3, pds: 1, spaceDocks: 1, destroyers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:1, cruisers:1, destroyers:0, dreadnoughts:0, warSuns:0, fighters:2, infantry:4, pds:1 }
   },
   'Sardakk N\'orr': {
     description: 'Hard mode. No racial technologies, no special abilities — just raw combat stats and sheer numbers. Every other faction has tools you don\'t. Pure fundamentals.',
@@ -194,7 +194,7 @@ const FACTIONS = {
       { name: 'Quinarra', resources: 3, influence: 1, ready: true, trait: 'Industrial' },
       { name: "Tren'lak", resources: 1, influence: 0, ready: true, trait: 'Hazardous' }
     ],
-    units: { carriers: 2, cruisers: 2, destroyers: 1, infantry: 5, pds: 1, spaceDocks: 1, fighters: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:2, cruisers:1, destroyers:0, dreadnoughts:0, warSuns:0, fighters:0, infantry:5, pds:1 }
   },
   'Yssaril Tribes': {
     description: 'Action card manipulators. No hand limit, draw more cards than anyone, and always have an answer. Win through information and timing, not combat.',
@@ -206,7 +206,7 @@ const FACTIONS = {
       { name: 'Iol', resources: 2, influence: 3, ready: true, trait: 'Cultural' },
       { name: 'Xxehan', resources: 1, influence: 2, ready: true, trait: 'Hazardous' }
     ],
-    units: { carriers: 2, cruisers: 1, fighters: 2, infantry: 5, pds: 1, spaceDocks: 1, destroyers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
+    units: { spaceDocks:1, carriers:2, cruisers:1, destroyers:0, dreadnoughts:0, warSuns:0, fighters:2, infantry:5, pds:1 }
   },
   'Nomad': {
     description: '(Prophecy of Kings) Triple agent value and steady Agenda Phase income. A flexible, opportunistic faction with no fixed homeworld to defend.',
@@ -333,6 +333,18 @@ Every response must end with a state update block immediately after [DEBRIEF] (o
 <!--STATE:{"round":1,"phase":"strategy","player":{"vp":0,"tradeGoods":0},"opponents":[],"publicObjectives":[]}-->
 
 Only include fields that changed this turn. The server merges updates into full state.
+
+Field tracking rules — update these whenever relevant events occur:
+- player.actionCards: string array of card names. Add when Kramer draws action cards. Remove when played/discarded.
+- player.secretObjectives: array of {name, condition, scored}. Add when drawn via Imperial. Set scored:true when Kramer scores one.
+- player.promissoryNotes: string array. Add when received from another player. Remove when returned or used.
+- player.technologies: add new tech names when Kramer researches.
+- player.units: update when significant unit changes occur (major fleet built, significant losses). Keep as a running total across all systems.
+- player.strategyCards: update every time Kramer picks a strategy card.
+- opponents[].strategyCards: update when each opponent picks.
+- opponents[].vp: always update all opponents during Status Phase.
+- activeLaws: string array of active law names + brief effect, e.g. "Minister of Policy — Speaker draws 3 action cards at end of status phase". Add when a law passes. Remove if repealed.
+- speakerIndex: index into [Kramer, opp1, opp2, opp3] array. Update when speaker changes.
 
 publicObjectives format — include whenever a new objective is revealed or scored:
 {"name":"Spend Budget Allocations","condition":"Spend 8 or more trade goods","type":"stage1","scored":false,"playerProgress":"0 TG spent so far"}
@@ -463,16 +475,20 @@ function buildSystemPrompt(state) {
 
 ## Current Game State
 Round: ${state.round} | Phase: ${state.phase}
+Speaker: ${(() => { const all = [factionName, ...(state.opponents||[]).map(o=>o.name)]; return all[state.speakerIndex ?? 0] || factionName; })()}
 Your VP: ${state.player.vp} | Opponents: ${state.opponents.map(o => `${o.name} ${o.vp}VP`).join(', ')}
 Your Command Tokens — Tactics: ${state.player.commandTokens.tactics}, Fleet: ${state.player.commandTokens.fleet}, Strategy: ${state.player.commandTokens.strategy}
 Your Trade Goods: ${state.player.tradeGoods} | Commodities: ${state.player.commodities}
+Your Strategy Cards: ${state.player.strategyCards?.length ? state.player.strategyCards.join(', ') : 'none chosen yet'}
 Your Planets: ${state.player.planets.map(p => `${p.name}(${p.resources}/${p.influence},${p.ready ? 'ready' : 'exhausted'})`).join(', ')}
 Your Technologies: ${state.player.technologies.join(', ') || 'none'}
-Your Units (home system): ${JSON.stringify(state.player.units)}
-Your Strategy Cards: ${state.player.strategyCards?.length ? state.player.strategyCards.join(', ') : 'none chosen yet'}
+Your Action Cards in hand: ${state.player.actionCards?.length ? state.player.actionCards.join(', ') : 'none'}
+Your Secret Objectives: ${state.player.secretObjectives?.length ? state.player.secretObjectives.map(o => `${o.name}${o.scored?' (scored)':''}`).join(', ') : 'none'}
+Your Promissory Notes held: ${state.player.promissoryNotes?.length ? state.player.promissoryNotes.join(', ') : 'none'}
+Your Units: ${JSON.stringify(state.player.units)}
 Custodians Token Removed (unlocks Agenda Phase): ${state.custodiansRemoved ? 'yes' : 'no'}
-Opponent Turn Queue (Action Phase only — resolve ONE per response, see rules above): ${state.opponentQueue?.length ? state.opponentQueue.join(', ') : 'empty — it is Kramer\'s turn'}
-Active Laws: ${state.activeLaws.length ? state.activeLaws.join(', ') : 'none'}`;
+Opponent Turn Queue (Action Phase only): ${state.opponentQueue?.length ? state.opponentQueue.join(', ') : 'empty — it is Kramer\'s turn'}
+Active Laws: ${state.activeLaws?.length ? state.activeLaws.join(', ') : 'none'}`;
 }
 
 // ── Server ─────────────────────────────────────────────────────────────────────
