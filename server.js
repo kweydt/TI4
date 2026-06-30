@@ -326,25 +326,47 @@ Output this section ONLY at the end of Status Phase responses, after all other s
 
 ---
 
-## State Block
+## State Blocks
 
-Every response must end with a state update block immediately after [DEBRIEF] (or after [CHOICES] in non-Status turns):
+Every response outputs TWO blocks in this order: first EVENTS, then STATE.
+
+### 1. EVENTS block — discrete game facts (put this first)
+Record every meaningful thing that happened this turn as structured events. The client applies these to keep fine-grained state accurate.
+
+<!--EVENTS:
+VERB: detail
+-->
+
+Supported events (exact verb names, one per line):
+SPEND: N tactics/fleet/strategy/trade-goods
+BUILD: N unit-type at system-name (cost: XR)
+COMBAT: system-name — Kramer loses N unit-type  (only log Kramer's losses)
+EXHAUST: planet-name
+READY: planet-name
+DRAW: action-card "Card Name"
+PLAY: action-card "Card Name"
+DISCARD: action-card "Card Name"
+DRAW: secret-objective "Name — condition text"
+SCORE: objective "Name" (+NVP)
+RESEARCH: Technology Name
+LAW: "Name — brief effect" passed   (or repealed)
+SPEAKER: player-name
+
+Include every event that happened. Omit verbs with no activity. If nothing trackable happened, omit the EVENTS block entirely.
+
+### 2. STATE block — high-level fields only (put this after EVENTS)
+Use STATE for fields that events can't express: round, phase, opponent VP, public objectives, strategy cards, opponentQueue.
 
 <!--STATE:{"round":1,"phase":"strategy","player":{"vp":0,"tradeGoods":0},"opponents":[],"publicObjectives":[]}-->
 
-Only include fields that changed this turn. The server merges updates into full state.
+Only include fields that changed. Do NOT include actionCards, secretObjectives, technologies, or activeLaws in STATE — those are handled by EVENTS.
 
-Field tracking rules — update these whenever relevant events occur:
-- player.actionCards: string array of card names. Add when Kramer draws action cards. Remove when played/discarded.
-- player.secretObjectives: array of {name, condition, scored}. Add when drawn via Imperial. Set scored:true when Kramer scores one.
-- player.promissoryNotes: string array. Add when received from another player. Remove when returned or used.
-- player.technologies: add new tech names when Kramer researches.
-- player.units: update when significant unit changes occur (major fleet built, significant losses). Keep as a running total across all systems.
-- player.strategyCards: update every time Kramer picks a strategy card.
-- opponents[].strategyCards: update when each opponent picks.
+Other STATE fields:
+- player.strategyCards: update when Kramer picks strategy cards.
+- opponents[].strategyCards: update when opponents pick.
 - opponents[].vp: always update all opponents during Status Phase.
-- activeLaws: string array of active law names + brief effect, e.g. "Minister of Policy — Speaker draws 3 action cards at end of status phase". Add when a law passes. Remove if repealed.
-- speakerIndex: index into [Kramer, opp1, opp2, opp3] array. Update when speaker changes.
+- speakerIndex: index into [Kramer, opp1, opp2, opp3].
+- opponentQueue: remaining opponents to act in Action Phase.
 
 publicObjectives format — include whenever a new objective is revealed or scored:
 {"name":"Spend Budget Allocations","condition":"Spend 8 or more trade goods","type":"stage1","scored":false,"playerProgress":"0 TG spent so far"}

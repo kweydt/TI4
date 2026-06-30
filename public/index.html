@@ -618,11 +618,35 @@
   #command-sheet.collapsed #sheet-body { display: none; }
   #sheet-body { padding: 0 12px 10px; }
   #stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 8px; }
-  .stat-cell { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 4px; padding: 4px 4px; text-align: center; }
+  .stat-cell { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 4px; padding: 4px 4px 2px; text-align: center; display: flex; flex-direction: column; align-items: center; }
   .stat-label { font-family: var(--font-mono); font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; display: block; }
   .stat-value { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--text); display: block; line-height: 1.2; }
   .stat-cell.vp .stat-value { color: var(--gold); }
   .stat-cell.tac .stat-value, .stat-cell.fleet .stat-value { color: var(--blue); }
+  .stat-adj { display: flex; gap: 2px; margin-top: 2px; }
+  .stat-btn { background: none; border: 1px solid var(--border); color: var(--dim); font-size: 10px; width: 16px; height: 14px; border-radius: 2px; cursor: pointer; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .stat-btn:hover { color: var(--text); border-color: var(--dim); }
+
+  /* Event receipt */
+  .entry.event-receipt { border-color: rgba(64,192,160,0.2); }
+  .entry.event-receipt .entry-head { border-color: rgba(64,192,160,0.15); }
+  .entry.event-receipt .entry-icon, .entry.event-receipt .entry-who { color: #40c0a0; }
+  .event-receipt-body { padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 3px; }
+  .event-line { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--dim); padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .event-line.removed { opacity: 0.35; text-decoration: line-through; }
+  .event-line-verb { color: #40c0a0; font-weight: 600; flex-shrink: 0; }
+  .event-line-detail { flex: 1; }
+  .event-line-undo { background: none; border: none; color: var(--border); font-size: 10px; cursor: pointer; padding: 0; flex-shrink: 0; line-height: 1; }
+  .event-line-undo:hover { color: var(--orange); }
+
+  /* Tile unit editor */
+  .tp-unit-editor { padding: 8px 12px 10px; }
+  .tp-unit-row { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; }
+  .tp-unit-label { font-family: var(--font-mono); font-size: 10px; color: var(--dim); }
+  .tp-unit-ctrl { display: flex; align-items: center; gap: 5px; }
+  .tp-unit-val { font-family: var(--font-mono); font-size: 12px; color: var(--text); min-width: 16px; text-align: center; }
+  .tp-unit-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--dim); font-size: 12px; width: 20px; height: 20px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .tp-unit-btn:hover { color: var(--text); border-color: var(--dim); }
   #planets-row { display: flex; flex-wrap: wrap; gap: 5px; }
   .planet-tag { display: flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 3px; font-family: var(--font-mono); font-size: 10px; border: 1px solid; }
   .planet-tag.ready { border-color: var(--green); color: var(--green); }
@@ -1407,10 +1431,10 @@
         <div id="sheet-body">
           <div id="stats-row">
             <div class="stat-cell vp" title="Victory Points — score 10 to win."><span class="stat-label">VP</span><span class="stat-value" id="stat-vp">0</span></div>
-            <div class="stat-cell" title="Trade Goods — a flexible currency spent like resources."><span class="stat-label">TG</span><span class="stat-value" id="stat-tg">0</span></div>
-            <div class="stat-cell tac" title="Tactics Command Tokens — spend to activate a system."><span class="stat-label">TAC</span><span class="stat-value" id="stat-tac">3</span></div>
-            <div class="stat-cell fleet" title="Fleet Command Tokens — limits ships per system."><span class="stat-label">FLEET</span><span class="stat-value" id="stat-fleet">3</span></div>
-            <div class="stat-cell" title="Strategy Command Tokens — spent to use strategy card secondaries."><span class="stat-label">STRAT</span><span class="stat-value" id="stat-strat">2</span></div>
+            <div class="stat-cell" title="Trade Goods — click +/- to adjust."><span class="stat-label">TG</span><span class="stat-value" id="stat-tg">0</span><div class="stat-adj"><button class="stat-btn" onclick="adjustStat('tradeGoods',-1)">−</button><button class="stat-btn" onclick="adjustStat('tradeGoods',1)">+</button></div></div>
+            <div class="stat-cell tac" title="Tactics tokens — click +/- to adjust."><span class="stat-label">TAC</span><span class="stat-value" id="stat-tac">3</span><div class="stat-adj"><button class="stat-btn" onclick="adjustStat('tactics',-1)">−</button><button class="stat-btn" onclick="adjustStat('tactics',1)">+</button></div></div>
+            <div class="stat-cell fleet" title="Fleet tokens — click +/- to adjust."><span class="stat-label">FLEET</span><span class="stat-value" id="stat-fleet">3</span><div class="stat-adj"><button class="stat-btn" onclick="adjustStat('fleet',-1)">−</button><button class="stat-btn" onclick="adjustStat('fleet',1)">+</button></div></div>
+            <div class="stat-cell" title="Strategy tokens — click +/- to adjust."><span class="stat-label">STRAT</span><span class="stat-value" id="stat-strat">2</span><div class="stat-adj"><button class="stat-btn" onclick="adjustStat('strategy',-1)">−</button><button class="stat-btn" onclick="adjustStat('strategy',1)">+</button></div></div>
           </div>
           <div id="planets-row"></div>
         </div>
@@ -2452,6 +2476,234 @@ function renderPlanets(planets) {
   ).join('');
 }
 
+// ── Direct stat adjustment (D-side: player owns these values) ────────────────
+
+function adjustStat(field, delta) {
+  if (!currentState?.player) return;
+  const p = currentState.player;
+  if (field === 'tradeGoods') {
+    p.tradeGoods = Math.max(0, (p.tradeGoods || 0) + delta);
+  } else if (['tactics','fleet','strategy'].includes(field)) {
+    if (!p.commandTokens) p.commandTokens = { tactics:3, fleet:3, strategy:2 };
+    p.commandTokens[field] = Math.max(0, (p.commandTokens[field] || 0) + delta);
+  }
+  applyStateToUI(currentState);
+  saveLocalState();
+}
+
+// ── Event system (B-side: LLM proposes, client applies) ──────────────────────
+
+const UNIT_KEY_MAP = {
+  carrier:'carriers', carriers:'carriers',
+  cruiser:'cruisers', cruisers:'cruisers',
+  destroyer:'destroyers', destroyers:'destroyers',
+  dreadnought:'dreadnoughts', dreadnoughts:'dreadnoughts',
+  'war sun':'warSuns', warsun:'warSuns', warsuns:'warSuns',
+  fighter:'fighters', fighters:'fighters',
+  infantry:'infantry',
+  pds:'pds',
+  'space dock':'spaceDocks', spacedock:'spaceDocks', spacedocks:'spaceDocks',
+  flagship:'flagships', flagships:'flagships',
+};
+
+function normalizeUnitKey(str) {
+  return UNIT_KEY_MAP[str.toLowerCase().trim()] || null;
+}
+
+function parseEvents(text) {
+  const match = text.match(/<!--EVENTS:([\s\S]*?)-->/);
+  if (!match) return [];
+  return match[1].trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
+}
+
+function applyEvents(eventLines) {
+  if (!currentState?.player || !eventLines.length) return;
+  const p = currentState.player;
+  const faction = (currentState.faction || '').toLowerCase();
+
+  for (const line of eventLines) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+    const verb = line.slice(0, colonIdx).trim().toUpperCase();
+    const detail = line.slice(colonIdx + 1).trim();
+
+    switch (verb) {
+      case 'SPEND': {
+        const m = detail.match(/(\d+)\s+(trade.?goods?|tactics|fleet|strategy)/i);
+        if (!m) break;
+        const n = parseInt(m[1]), type = m[2].toLowerCase();
+        if (type.includes('trade')) p.tradeGoods = Math.max(0, (p.tradeGoods||0) - n);
+        else if (p.commandTokens) p.commandTokens[type] = Math.max(0, (p.commandTokens[type]||0) - n);
+        break;
+      }
+      case 'BUILD': {
+        const m = detail.match(/(\d+)\s+(\w[\w\s]*?)(?:\s+at|\s+in|\s*\(|$)/i);
+        if (!m) break;
+        const n = parseInt(m[1]), key = normalizeUnitKey(m[2]);
+        if (key && p.units) p.units[key] = (p.units[key]||0) + n;
+        break;
+      }
+      case 'COMBAT': {
+        // "System X — result: Kramer loses N destroyer" or "you lose N fighters"
+        const lossM = detail.match(/(?:kramer|you|${faction})\s+los(?:e|es)\s+(\d+)\s+([\w\s]+?)(?:\s*\(|$)/i);
+        if (!lossM) break;
+        const n = parseInt(lossM[1]), key = normalizeUnitKey(lossM[2]);
+        if (key && p.units) p.units[key] = Math.max(0, (p.units[key]||0) - n);
+        break;
+      }
+      case 'EXHAUST': {
+        const planet = p.planets?.find(pl => pl.name.toLowerCase() === detail.toLowerCase().trim());
+        if (planet) planet.ready = false;
+        break;
+      }
+      case 'READY': {
+        const planet = p.planets?.find(pl => pl.name.toLowerCase() === detail.toLowerCase().trim());
+        if (planet) planet.ready = true;
+        break;
+      }
+      case 'DRAW': {
+        if (/^action.?card/i.test(detail)) {
+          const name = detail.replace(/^action.?card\s*/i,'').replace(/^["']|["']$/g,'');
+          if (!p.actionCards) p.actionCards = [];
+          if (!p.actionCards.includes(name)) p.actionCards.push(name);
+        } else if (/^secret.?obj/i.test(detail)) {
+          const raw = detail.replace(/^secret.?objective\s*/i,'').replace(/^["']|["']$/g,'');
+          const [name, condition] = raw.split(/\s*[—–-]\s*/);
+          if (!p.secretObjectives) p.secretObjectives = [];
+          if (!p.secretObjectives.find(o => o.name === name?.trim()))
+            p.secretObjectives.push({ name: (name||raw).trim(), condition: (condition||'').trim(), scored: false });
+        }
+        break;
+      }
+      case 'PLAY':
+      case 'DISCARD': {
+        if (/^action.?card/i.test(detail)) {
+          const name = detail.replace(/^action.?card\s*/i,'').replace(/^["']|["']$/g,'').trim();
+          p.actionCards = (p.actionCards||[]).filter(c => c !== name);
+        }
+        break;
+      }
+      case 'SCORE': {
+        const m = detail.match(/"([^"]+)"\s*\(\+(\d+)VP?\)/i);
+        if (!m) break;
+        const name = m[1], vps = parseInt(m[2]);
+        p.vp = (p.vp||0) + vps;
+        const obj = currentState.publicObjectives?.find(o => o.name === name);
+        if (obj) obj.scored = true;
+        const sec = p.secretObjectives?.find(o => o.name === name);
+        if (sec) sec.scored = true;
+        break;
+      }
+      case 'RESEARCH': {
+        const tech = detail.replace(/^["']|["']$/g,'').trim();
+        if (!p.technologies) p.technologies = [];
+        if (!p.technologies.includes(tech)) p.technologies.push(tech);
+        break;
+      }
+      case 'LAW': {
+        if (!currentState.activeLaws) currentState.activeLaws = [];
+        if (/repealed?/i.test(detail)) {
+          const lawName = detail.replace(/\s*repealed?\s*$/i,'').replace(/^["']|["']$/g,'').trim();
+          currentState.activeLaws = currentState.activeLaws.filter(l => !l.toLowerCase().startsWith(lawName.toLowerCase()));
+        } else {
+          const law = detail.replace(/\s*passed?\s*$/i,'').replace(/^["']|["']$/g,'').trim();
+          if (!currentState.activeLaws.includes(law)) currentState.activeLaws.push(law);
+        }
+        break;
+      }
+      case 'SPEAKER': {
+        const name = detail.trim();
+        const all = [currentState.faction, ...(currentState.opponents||[]).map(o=>o.name)];
+        const idx = all.findIndex(n => n?.toLowerCase() === name.toLowerCase());
+        if (idx >= 0) currentState.speakerIndex = idx;
+        break;
+      }
+    }
+  }
+  applyStateToUI(currentState);
+  saveLocalState();
+}
+
+function renderEventReceipt(eventLines) {
+  if (!eventLines.length) return;
+  const entry = document.createElement('div');
+  entry.className = 'entry event-receipt';
+  // Store lines for undo reference
+  const linesHtml = eventLines.map((line, i) => {
+    const colonIdx = line.indexOf(':');
+    const verb = colonIdx > -1 ? line.slice(0, colonIdx).trim() : line;
+    const detail = colonIdx > -1 ? line.slice(colonIdx + 1).trim() : '';
+    return `<div class="event-line" id="evl-${i}">
+      <span class="event-line-verb">${escapeHtml(verb)}</span>
+      <span class="event-line-detail">${escapeHtml(detail)}</span>
+      <button class="event-line-undo" onclick="removeEventLine(${i})" title="Undo">✕</button>
+    </div>`;
+  }).join('');
+  entry.innerHTML = `
+    <div class="entry-head"><span class="entry-icon">⟳</span><span class="entry-who">Events recorded this turn</span></div>
+    <div class="event-receipt-body">${linesHtml}</div>`;
+  el('log').appendChild(entry);
+  scrollToBottom(true);
+}
+
+function removeEventLine(i) {
+  const line = document.getElementById(`evl-${i}`);
+  if (!line) return;
+  line.classList.add('removed');
+  line.querySelector('.event-line-undo').disabled = true;
+  // Could re-derive state by re-applying remaining events;
+  // for now just mark visually and let user adjust via +/- controls
+}
+
+// ── Tile unit editor (D-side: per-system unit tracking on the map) ────────────
+
+const TILE_UNIT_TYPES = [
+  { key: 'carriers',     label: 'Carriers'     },
+  { key: 'cruisers',     label: 'Cruisers'     },
+  { key: 'destroyers',   label: 'Destroyers'   },
+  { key: 'dreadnoughts', label: 'Dreadnoughts' },
+  { key: 'warSuns',      label: 'War Suns'     },
+  { key: 'fighters',     label: 'Fighters'     },
+  { key: 'infantry',     label: 'Infantry'     },
+  { key: 'pds',          label: 'PDS'          },
+];
+
+function getTileUnits(pos) {
+  const tile = boardState.find(t => t.pos === pos);
+  return tile?.playerUnits || {};
+}
+
+function adjustTileUnit(pos, key, delta) {
+  let tile = boardState.find(t => t.pos === pos);
+  if (!tile) { tile = { pos }; boardState.push(tile); }
+  if (!tile.playerUnits) tile.playerUnits = {};
+  tile.playerUnits[key] = Math.max(0, (tile.playerUnits[key]||0) + delta);
+  // Refresh count display
+  const el2 = document.getElementById(`tu-${key}`);
+  if (el2) el2.textContent = tile.playerUnits[key] || 0;
+  // Refresh the SVG map if open
+  const wrapper = el('map-transform-wrapper');
+  if (wrapper && wrapper.innerHTML) wrapper.innerHTML = buildMapSVG();
+  saveLocalState();
+}
+
+function buildTileUnitEditor(pos) {
+  const units = getTileUnits(pos);
+  const hasUnits = Object.values(units).some(n => n > 0);
+  const rows = TILE_UNIT_TYPES.map(({ key, label }) => {
+    const n = units[key] || 0;
+    return `<div class="tp-unit-row">
+      <span class="tp-unit-label">${label}</span>
+      <div class="tp-unit-ctrl">
+        <button class="tp-unit-btn" onclick="adjustTileUnit(${pos},'${key}',-1)">−</button>
+        <span class="tp-unit-val" id="tu-${key}">${n}</span>
+        <button class="tp-unit-btn" onclick="adjustTileUnit(${pos},'${key}',1)">+</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="tp-section">MY UNITS HERE</div><div class="tp-unit-editor">${rows}</div>`;
+}
+
 function togglePanel(id) {
   document.getElementById(id).classList.toggle('expanded');
 }
@@ -3110,6 +3362,25 @@ function buildMapSVG() {
       out += `<circle cx="${cx - size*0.38}" cy="${cy - size*0.44}" r="${size*0.16}" fill="#c8b870"/>`;
       out += `<text x="${cx - size*0.38}" y="${cy - size*0.44 + size*0.065}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${size*0.18}" fill="#030508" font-weight="bold">★</text>`;
     }
+    // Player unit marker
+    const tileUnits = boardState.find(t => t.pos === i)?.playerUnits;
+    if (tileUnits) {
+      const unitTotal = Object.values(tileUnits).reduce((s, n) => s + n, 0);
+      if (unitTotal > 0) {
+        const abbrevParts = [];
+        if (tileUnits.dreadnoughts) abbrevParts.push(`${tileUnits.dreadnoughts}DN`);
+        if (tileUnits.warSuns) abbrevParts.push(`${tileUnits.warSuns}WS`);
+        if (tileUnits.carriers) abbrevParts.push(`${tileUnits.carriers}CA`);
+        if (tileUnits.cruisers) abbrevParts.push(`${tileUnits.cruisers}CR`);
+        if (tileUnits.destroyers) abbrevParts.push(`${tileUnits.destroyers}DD`);
+        if (tileUnits.fighters) abbrevParts.push(`${tileUnits.fighters}F`);
+        if (tileUnits.infantry) abbrevParts.push(`${tileUnits.infantry}I`);
+        if (tileUnits.pds) abbrevParts.push(`${tileUnits.pds}P`);
+        const label = abbrevParts.join(' ');
+        out += `<rect x="${cx - size*0.48}" y="${cy + size*0.44}" width="${size*0.96}" height="${size*0.28}" rx="3" fill="rgba(74,158,255,0.18)" stroke="rgba(74,158,255,0.5)" stroke-width="0.8"/>`;
+        out += `<text x="${cx}" y="${cy + size*0.6}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${size*0.14}" fill="#4a9eff" font-weight="bold">${escapeHtml(label)}</text>`;
+      }
+    }
     // Position index (faint)
     out += `<text x="${cx + size*0.4}" y="${cy + size*0.58}" text-anchor="end" font-family="IBM Plex Mono" font-size="${size*0.13}" fill="#1e2a40" opacity="0.5">${i}</text>`;
     // Transparent hit area on top for clean event targeting
@@ -3236,6 +3507,8 @@ function buildPanelHTML(tile) {
   html += `<div class="tp-status-row"><span class="tp-status-label">Controller</span><span class="tp-status-val">${escapeHtml(tile.ctrl || '—')}</span></div>`;
   html += `<div class="tp-status-row"><span class="tp-status-label">Ships</span><span class="tp-status-val">${escapeHtml(tile.ships || '—')}</span></div>`;
   if (tile.type === 'home') html += `<div class="tp-status-row"><span class="tp-status-label">Faction</span><span class="tp-status-val">${escapeHtml(tile.faction || '—')}</span></div>`;
+  // Per-system unit editor
+  html += buildTileUnitEditor(tile.pos);
   return html;
 }
 
@@ -3528,12 +3801,23 @@ function updateStreamEntry(text) {
 function finalizeStream(fullText) {
   hideStreamStatus();
   if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
+  // Apply events first (B-side: fine-grained state from LLM narration)
+  const eventLines = parseEvents(fullText);
+  if (eventLines.length) {
+    applyEvents(eventLines);
+    renderEventReceipt(eventLines);
+  }
+  // Then apply STATE block for high-level fields (round, phase, opponent VP, objectives)
   const stateMatch = fullText.match(/<!--STATE:([\s\S]*?)-->/);
   if (stateMatch) {
     try {
       const updates = JSON.parse(stateMatch[1]);
       if (!currentState) currentState = {};
       if (updates.board) { applyBoardDelta(updates.board); delete updates.board; }
+      // Don't let STATE overwrite fine-grained fields that events already handled
+      ['actionCards','secretObjectives','promissoryNotes','technologies','activeLaws'].forEach(k => {
+        if (updates.player?.[k] && eventLines.length) delete updates.player[k];
+      });
       deepMerge(currentState, updates);
       applyStateToUI(currentState);
       saveLocalState();
