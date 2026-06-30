@@ -2423,9 +2423,12 @@ function renderOpponentTurns(raw) {
     return;
   }
 
+  const queueDepth = currentState?.opponentQueue?.length || 0;
   const label = document.createElement('div');
   label.id = 'opponent-turns-label';
-  label.textContent = 'Opponent Turns';
+  label.textContent = queueDepth > 0
+    ? `Opponent Turn — ${queueDepth} more to act before your turn`
+    : 'Opponent Turn';
   el('log').appendChild(label);
 
   for (let i = 0; i < blocks.length; i += 2) {

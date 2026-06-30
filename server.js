@@ -296,11 +296,11 @@ Evaluate Kramer's decision. Use this exact format when evaluating:
 Then: what he did well, what he missed, what an expert would do differently. Keep it tight — 3–5 sentences max. Don't repeat what you said in [GM].
 
 [OPPONENTS]
-Narrate each opponent's turn as its own separate entry so Kramer can see them acting individually, not as one blended paragraph. Strict format, one block per opponent:
+Format for each opponent included this response:
 ### Name (Faction)
 1-2 sentences: what they did and their reasoning, so Kramer learns to read opponent strategy.
 
-Repeat the "### Name (Faction)" header for every opponent who acted this turn, in the order they acted (initiative order during Action Phase, draft order during Strategy Phase). Do not merge multiple opponents under one header.
+During the Strategy Phase, you may include multiple opponents in one response (the draft has no reactive windows). During the ACTION PHASE, see the turn-queue rule below — only ONE opponent's turn goes in [OPPONENTS] per response.
 
 [CHOICES]
 1. [First concrete option with brief reason why]
@@ -349,7 +349,16 @@ Always update ALL opponents' vp values in STATE during Status Phase.
 - Walk through tactical, strategic, and component actions
 - Explain Command Token spending — core resource constraint
 - Coach fleet composition and movement decisions for ${factionName}
-- Narrate opponent turns so Kramer builds mental model
+
+#### Turn-by-turn simulation (CRITICAL — do not batch opponent turns)
+The Action Phase is strictly round-robin in real TI4: one player acts per turn, in initiative order, looping until everyone has passed. Kramer must see this turn-by-turn, not as a single end-of-round summary, because secondary abilities and other reactions only matter if he sees them coming one at a time.
+
+State field state.opponentQueue (array of opponent faction names) drives this:
+- After Kramer takes his own action (strategic/tactical/component) or explicitly passes, REFILL state.opponentQueue with every opponent who has a turn before Kramer acts again, in initiative order (normally: every opponent who hasn't passed yet this round).
+- Each response thereafter resolves EXACTLY ONE opponent — the first one in state.opponentQueue — then removes them from the array in your STATE update. Narrate only that one opponent in [OPPONENTS] (single block).
+- If state.opponentQueue is non-empty after removing that opponent: this response is NOT asking Kramer for a real game decision. In [CHOICES], the first option must be exactly "Continue — let the next opponent take their turn". If that opponent's STRATEGIC ACTION gives Kramer a usable secondary-ability window, OR their tactical action directly threatens/affects him, add a second [CHOICES] option offering that specific reaction. Keep [GM] and [COACH] very short on these in-between turns (1-2 sentences each) — they're pacing beats, not full turns.
+- If state.opponentQueue is now empty: play has returned to Kramer. Present his next real action choices normally in [CHOICES], with full [GM]/[COACH] detail.
+- The Action Phase only ends when Kramer AND all opponents have passed — track who has passed if needed, don't end the phase just because Kramer passed once.
 
 ### Status Phase
 - Reveal and explain the new public objective; add it to STATE publicObjectives array
@@ -419,7 +428,8 @@ function buildInitialState(factionName, opponentCount) {
     custodiansRemoved: false,
     publicObjectives: [],
     scoredObjectives: [],
-    activeLaws: []
+    activeLaws: [],
+    opponentQueue: []
   };
 }
 
@@ -452,6 +462,7 @@ Your Technologies: ${state.player.technologies.join(', ') || 'none'}
 Your Units (home system): ${JSON.stringify(state.player.units)}
 Your Strategy Cards: ${state.player.strategyCards?.length ? state.player.strategyCards.join(', ') : 'none chosen yet'}
 Custodians Token Removed (unlocks Agenda Phase): ${state.custodiansRemoved ? 'yes' : 'no'}
+Opponent Turn Queue (Action Phase only — resolve ONE per response, see rules above): ${state.opponentQueue?.length ? state.opponentQueue.join(', ') : 'empty — it is Kramer\'s turn'}
 Active Laws: ${state.activeLaws.length ? state.activeLaws.join(', ') : 'none'}`;
 }
 
