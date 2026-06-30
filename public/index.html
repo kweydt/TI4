@@ -2379,42 +2379,45 @@ function renderSections(sections) {
 
 const STRATEGY_CARDS = [
   { initiative: 1, name: 'Leadership', color: '#e8c44a',
-    primary: 'Gain 3 command tokens. Redistribute your command tokens as you choose.',
-    secondary: 'Spend 1 strategy CC → gain 1 command token.' },
+    primary: 'Gain 3 command tokens. Then may spend any amount of influence to gain 1 more token per 3 influence spent.',
+    secondary: 'Each other player may spend influence (3 per token) to gain command tokens. No command token cost.' },
   { initiative: 2, name: 'Diplomacy', color: '#4a9eff',
-    primary: 'Choose a non-home system with a planet. Players remove ships from adjacent systems and cannot activate it next round. Place 2 CCs from supply on systems of your choice.',
-    secondary: 'Spend 1 strategy CC → place 1 CC from supply onto any system you control.' },
+    primary: 'Choose a system (not Mecatol Rex) you control a planet in — each other player places a command token there. Then ready up to 2 of your exhausted planets.',
+    secondary: 'Spend 1 strategy token → ready up to 2 of your exhausted planets.' },
   { initiative: 3, name: 'Politics', color: '#9b5de5',
-    primary: 'Draw 2 agenda cards, keep 1, discard 1. Take the Speaker token (or keep it). Draw 2 action cards.',
-    secondary: 'Spend 1 strategy CC → draw 1 action card.' },
+    primary: 'Choose the new Speaker. Draw 2 action cards. Secretly peek at the top 2 agenda cards and reorder/replace them on the deck.',
+    secondary: 'Spend 1 strategy token → draw 2 action cards.' },
   { initiative: 4, name: 'Construction', color: '#a0c070',
-    primary: 'Place 1 space dock AND 1 PDS in any systems you control (one each, separately).',
-    secondary: 'Spend 1 strategy CC → place 1 space dock OR 1 PDS in a system you control.' },
+    primary: 'Place 1 PDS or space dock on a planet you control. Then may place 1 more PDS on a planet you control.',
+    secondary: 'Spend 1 strategy token → place 1 PDS or space dock on a planet you control in any system.' },
   { initiative: 5, name: 'Trade', color: '#f4a24a',
-    primary: 'Gain 3 trade goods. All players replenish their commodities. You may open or close trade deals.',
-    secondary: 'Spend 1 strategy CC → replenish your commodities.' },
+    primary: 'Gain 3 trade goods. Replenish your commodities to max. May let other players replenish theirs for free too.',
+    secondary: 'Spend 1 strategy token → replenish your commodities.' },
   { initiative: 6, name: 'Warfare', color: '#e05050',
-    primary: 'Remove 1 command token from the board and return it to your reinforcements. Take 1 additional action immediately.',
-    secondary: 'Spend 1 strategy CC → remove 1 of your CCs from the board.' },
+    primary: 'Remove 1 of your command tokens from the board. Then may freely redistribute your tokens among all 3 pools.',
+    secondary: 'Spend 1 strategy token → use a space dock\'s Production in your home system without activating it.' },
   { initiative: 7, name: 'Technology', color: '#40c0c0',
-    primary: 'Research 1 technology. Then research a second technology — pay its normal cost minus 6 resources.',
-    secondary: 'Spend 1 strategy CC → research 1 technology, paying its cost plus 4 resources.' },
+    primary: 'Research 1 technology. Then may research 1 more by paying 6 resources.',
+    secondary: 'Spend 1 strategy token + 4 resources → research 1 technology.' },
   { initiative: 8, name: 'Imperial', color: '#c87040',
-    primary: 'Score 1 Imperial Point if you control Mecatol Rex OR draw 1 secret objective. Reveal and place 1 public Stage I objective.',
-    secondary: 'Spend 1 strategy CC → draw 1 secret objective.' },
+    primary: 'Score 1 public objective you qualify for. Then: gain 1 VP if you control Mecatol Rex, or draw 1 secret objective if you don\'t.',
+    secondary: 'Spend 1 strategy token → draw 1 secret objective.' },
 ];
 
 function renderStrategyCardPicker() {
-  // Build map of taken cards from state
+  // Build map of taken cards from state (each player holds up to 2 in a 4-player game)
   const takenMap = {}; // cardName → taker faction name
   if (currentState) {
-    if (currentState.player?.strategyCard) takenMap[currentState.player.strategyCard] = currentState.faction;
-    (currentState.opponents || []).forEach(o => { if (o.strategyCard) takenMap[o.strategyCard] = o.faction || o.name; });
+    (currentState.player?.strategyCards || []).forEach(c => { takenMap[c] = currentState.faction; });
+    (currentState.opponents || []).forEach(o => { (o.strategyCards || []).forEach(c => { takenMap[c] = o.faction || o.name; }); });
   }
+
+  const pickedCount = currentState?.player?.strategyCards?.length || 0;
+  const ordinal = pickedCount === 0 ? 'first' : 'second';
 
   const wrapper = document.createElement('div');
   wrapper.className = 'sc-picker';
-  wrapper.innerHTML = `<div class="sc-picker-label">Choose your strategy card</div>`;
+  wrapper.innerHTML = `<div class="sc-picker-label">Choose your ${ordinal} strategy card (4-player games draft 2 each)</div>`;
 
   const grid = document.createElement('div');
   grid.className = 'sc-grid';
@@ -2438,7 +2441,7 @@ function renderStrategyCardPicker() {
     if (!taken) {
       div.addEventListener('click', () => {
         wrapper.remove();
-        selectChoice(`I choose the ${card.name} strategy card.`);
+        selectChoice(`I choose the ${card.name} strategy card as my ${ordinal} pick.`);
       });
     }
     grid.appendChild(div);
@@ -3185,7 +3188,7 @@ function finalizeStream(fullText) {
 function maybeShowStrategyCards() {
   if (!currentState) return;
   if (currentState.phase !== 'strategy') return;
-  if (currentState.player?.strategyCard) return;
+  if ((currentState.player?.strategyCards?.length || 0) >= 2) return; // drafted both cards (4-player game)
   if (document.querySelector('.sc-picker')) return; // already showing
   renderStrategyCardPicker();
 }

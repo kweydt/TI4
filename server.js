@@ -225,11 +225,11 @@ const FACTIONS = {
 
 // Opponents pool — picks 3 that don't include the player's faction
 const OPPONENT_POOL = [
-  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCard: null, planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Sarween Tools', 'Quantum Datahub Node'], tradeGoods: 3, attitude: 'neutral' },
-  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCard: null, planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Spec Ops II'], tradeGoods: 0, attitude: 'neutral' },
-  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCard: null, planets: ['[0.0.0]', 'Wellon'],            unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Antimass Deflectors'], tradeGoods: 0, attitude: 'neutral' },
-  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCard: null, planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Non-Euclidean Shielding'], tradeGoods: 2, attitude: 'neutral' },
-  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCard: null, planets: ['Xxcha', 'Archon Ren'],          unitSummary: 'Standard Xxcha opening', technologies: ['Instinct Training', 'Nullification Field'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Sarween Tools', 'Quantum Datahub Node'], tradeGoods: 3, attitude: 'neutral' },
+  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Spec Ops II'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], planets: ['[0.0.0]', 'Wellon'],            unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Antimass Deflectors'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Non-Euclidean Shielding'], tradeGoods: 2, attitude: 'neutral' },
+  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], planets: ['Xxcha', 'Archon Ren'],          unitSummary: 'Standard Xxcha opening', technologies: ['Instinct Training', 'Nullification Field'], tradeGoods: 0, attitude: 'neutral' },
 ];
 
 function getOpponents(playerFaction) {
@@ -324,10 +324,12 @@ Always update ALL opponents' vp values in STATE during Status Phase.
 ## Teaching Priorities by Phase
 
 ### Strategy Phase
-- The UI shows all 8 strategy cards automatically as visual tiles — DO NOT list or describe them in your response.
+- VERIFIED RULE: in a 4-player game, each player drafts TWO strategy cards (not one). All 8 cards get claimed — no leftovers, no trade-goods-on-unpicked-cards. Kramer's initiative for the Action Phase is his LOWER-numbered card.
+- The UI shows all 8 strategy cards automatically as visual tiles and tracks picks in state.player.strategyCards (array) — DO NOT list or describe card abilities in your response.
 - In [GM]: set the scene briefly (2-3 sentences max), then tell Kramer it's his turn to pick. Never enumerate or describe card abilities.
-- In [COACH]: give sharp advice on which 1-2 cards to consider and exactly why for ${factionName} this round. Reference opponent threats. 3-5 sentences max.
-- After Kramer picks: confirm his pick in [GM] (1 sentence), then in [OPPONENTS] have each opponent pick with one-line reasoning. Advance state.
+- In [COACH]: give sharp advice for whichever pick Kramer is making (his 1st or 2nd card — check state.player.strategyCards length) and exactly why for ${factionName} this round, considering what's already taken. 3-5 sentences max.
+- After each Kramer pick: confirm it in [GM] (1 sentence), then in [OPPONENTS] have each opponent make their corresponding pick (their 1st, then later their 2nd) with one-line reasoning. Update state.opponents[].strategyCards.
+- Repeat until Kramer holds 2 cards. Only then move to the Action Phase.
 - Never describe what strategy cards do. The UI handles that. Coach the decision only.
 
 ### Action Phase
@@ -344,23 +346,26 @@ Always update ALL opponents' vp values in STATE during Status Phase.
 - End every Status Phase response with a [DEBRIEF] block (see Response Format above)
 
 ### Agenda Phase
-- Present both agenda cards and explain effects
-- Walk through voting (influence = votes)
-- Have opponents vote with reasoning
+- VERIFIED RULE: the Agenda Phase is SKIPPED entirely until state.custodiansRemoved is true. It does NOT happen every round automatically. It is unlocked permanently — including the round it happens in — the moment a player removes the Custodians Token from Mecatol Rex by paying 6 influence and committing 1+ ground forces during an invasion of it (which also grants that player 1 VP immediately).
+- While custodiansRemoved is false: after Status Phase, just begin a new round at the Strategy Phase. Do not run an Agenda Phase, do not mention agenda cards.
+- Once unlocked: present both agenda cards and explain effects, walk through voting (influence = votes; trade goods CANNOT be spent on votes), have opponents vote with reasoning. Speaker votes last and breaks ties.
+- Coach Kramer on whether removing the Custodians Token (and unlocking this phase) is even in his interest yet — it's a real strategic choice, not just a milestone.
 
 ---
 
-## Rules Claude Must Know Cold
+## Rules Claude Must Know Cold (verified against official Living Rules Reference — see RULES_REFERENCE.md)
 
-- Command Token economy: 3 tactics, 3 fleet, 2 strategy at game start.
-- Activation: place tactics CC on system. Can only activate each system once per round.
-- Fleet limit: non-fighter ships in system cannot exceed fleet CC pool.
-- Production: (2 + planet resources) capacity per activated space dock.
-- Combat: simultaneous rolls. Hit on combat value or higher. Space combat then ground combat.
-- Sustain damage: Dreadnoughts and Flagships absorb one hit instead of dying.
-- Trade: must be neighbors. Can trade commodities, trade goods, promissory notes.
-- Technology: pay resources matching prerequisites OR use tech skips.
-- Objectives: public scored during Status Phase. Secret scored when conditions met.
+- Win condition: first to 10 VP wins immediately. NOT a fixed "round 6" cutoff — the only other end trigger is the public objective deck running out (5 Stage I + 5 Stage II; typically exhausts around round 8-9), at which point whoever has the most VP wins.
+- 4-player strategy draft: each player picks TWO strategy cards (not one). All 8 cards get claimed, no leftovers. Initiative = lower of your two card numbers. Cannot pass in Action Phase until both cards' primaries are used.
+- Command Token economy: 3 tactics, 3 fleet, 2 strategy at game start (8 total).
+- Activation: place 1 tactic-pool token on system. Can only activate each system once per round.
+- Fleet limit: the COUNT of tokens in fleet pool caps non-fighter ships in one system. Fighters and ground forces do NOT count against this limit.
+- Production: each unit's Production value is fixed per its card (not a formula). Dual-icon units (Fighters, Infantry) produce 2 per paid cost.
+- Combat: attacker rolls first, then defender, each round. Hit on combat value or higher. Space combat resolves fully before invasion/ground combat in the same tactical action.
+- Sustain Damage: any unit with the ability can cancel 1 hit by being marked damaged (not destroyed) instead of dying; cannot be used again until repaired in Status Phase. Cannot cancel Anti-Fighter Barrage hits.
+- Trade: commodities can only be spent by giving them to another player (they convert to trade goods for the receiver). You can't spend your own commodities directly.
+- Technology: pay resources, need 1 owned tech of matching color per prerequisite icon (Propulsion=blue, Biotic=green, Cybernetic=yellow, Warfare=red). Tech specialty planets can waive one matching-color prerequisite icon.
+- Objectives: max 1 public + 1 secret scored per player per Status Phase. Secret objective hand cap is 3 (scored + unscored combined). Mecatol Rex grants no passive bonus — only a one-time VP for removing the Custodians Token, plus a recurring VP-instead-of-secret-draw on the Imperial card's primary while you control it.
 - Mecatol Rex: costs 6 influence to land troops. 1 VP for controlling at end of Status Phase.
 
 ---
@@ -386,17 +391,18 @@ function buildInitialState(factionName) {
       tradeGoods: 0,
       commodities: f.commodities,
       commandTokens: { tactics: 3, fleet: 3, strategy: 2 },
-      strategyCard: null,
+      strategyCards: [],
       planets: JSON.parse(JSON.stringify(f.planets)),
       units: { ...f.units },
       technologies: [...f.startingTech],
       actionCards: [],
-      secretObjective: null,
+      secretObjectives: [],
       promissoryNotes: []
     },
     opponents: JSON.parse(JSON.stringify(opponents)),
     mecatolControlled: false,
     mecatolController: null,
+    custodiansRemoved: false,
     publicObjectives: [],
     scoredObjectives: [],
     activeLaws: []
@@ -430,7 +436,8 @@ Your Trade Goods: ${state.player.tradeGoods} | Commodities: ${state.player.commo
 Your Planets: ${state.player.planets.map(p => `${p.name}(${p.resources}/${p.influence},${p.ready ? 'ready' : 'exhausted'})`).join(', ')}
 Your Technologies: ${state.player.technologies.join(', ') || 'none'}
 Your Units (home system): ${JSON.stringify(state.player.units)}
-Your Strategy Card: ${state.player.strategyCard || 'none'}
+Your Strategy Cards: ${state.player.strategyCards?.length ? state.player.strategyCards.join(', ') : 'none chosen yet'}
+Custodians Token Removed (unlocks Agenda Phase): ${state.custodiansRemoved ? 'yes' : 'no'}
 Active Laws: ${state.activeLaws.length ? state.activeLaws.join(', ') : 'none'}`;
 }
 
@@ -492,6 +499,14 @@ app.post('/api/rules', async (req, res) => {
       model: 'claude-sonnet-4-6',
       max_tokens: 600,
       system: `You are a Twilight Imperium 4th Edition rules expert. Answer rules questions clearly and concisely.
+
+Verified facts that override any conflicting prior assumption (confirmed against the official Living Rules Reference — do not contradict these):
+- In a 3- or 4-player game, each player drafts TWO strategy cards, not one. Initiative is the lower-numbered of the two.
+- The Agenda Phase does not happen every round — it's permanently unlocked only after a player removes the Custodians Token from Mecatol Rex (pay 6 influence + commit 1+ ground forces during an invasion of it; grants 1 VP immediately).
+- There is no official "round 6" end condition. The game ends at 10 VP, or when the public objective deck is exhausted during a Status Phase reveal (whoever has the most VP then wins).
+- Leadership's secondary ability costs influence only (3 per command token) — it does NOT cost a strategy-pool command token like the other 7 cards' secondaries.
+- Fleet pool token count caps non-fighter ships only; fighters and ground forces are uncapped by it.
+- Secret objective hand cap is 3 (scored + unscored combined).
 
 Guidelines:
 - Be accurate to the rules as written (base game + PoK where relevant)
