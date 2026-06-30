@@ -14,22 +14,21 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const FACTIONS = {
   'Federation of Sol': {
     description: "Humanity's finest. Straightforward mechanics, massive infantry, reliable fleet mobility. The best faction for learning TI4 fundamentals.",
-    homeworlds: 'Jord (4R/2I), Moll Primus (2R/3I)',
+    homeworlds: 'Jord (4R/2I)',
     startingTech: ['Neural Motivator', 'Antimass Deflectors'],
-    commodities: 3,
-    keyAbility: 'ORBITAL DROP: Move infantry from carriers directly into invaded systems. GENESIS: Build a space dock in any system you control with no enemy ships.',
+    commodities: 4,
+    keyAbility: 'ORBITAL DROP: Spend 1 strategy pool token to place 2 infantry from reinforcements on a planet you control. VERSATILE: Gain 1 additional command token whenever you gain tokens during the Status Phase.',
     planets: [
-      { name: 'Jord', resources: 4, influence: 2, ready: true, trait: 'Cultural' },
-      { name: 'Moll Primus', resources: 2, influence: 3, ready: true, trait: 'Industrial' }
+      { name: 'Jord', resources: 4, influence: 2, ready: true, trait: 'Cultural' }
     ],
     units: { carriers: 3, destroyers: 1, fighters: 3, infantry: 6, pds: 1, spaceDocks: 1, cruisers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Emirates of Hacan': {
     description: 'Masters of trade and negotiation. Economic dominance through commodities, backroom deals, and controlling the flow of resources across the galaxy.',
     homeworlds: 'Arretze (2R/0I), Kamdorn (0R/1I), Hercant (1R/1I)',
-    startingTech: ['Sarween Tools', 'Quantum Datahub Node'],
-    commodities: 3,
-    keyAbility: 'Trade without spending action cards. Negotiate freely. Your promissory note lets another player act as if they have your racial ability.',
+    startingTech: ['Antimass Deflectors', 'Sarween Tools'],
+    commodities: 6,
+    keyAbility: 'MASTERS OF TRADE: No command token cost to resolve the Trade strategy card secondary. GUILD SHIPS: Negotiate transactions even with non-neighbors. ARBITERS: Action cards can be exchanged in a transaction.',
     planets: [
       { name: 'Arretze', resources: 2, influence: 0, ready: true, trait: 'Industrial' },
       { name: 'Kamdorn', resources: 0, influence: 1, ready: true, trait: 'Cultural' },
@@ -40,9 +39,9 @@ const FACTIONS = {
   'Universities of Jol-Nar': {
     description: 'The premier tech faction. Start with 4 technologies and research faster than anyone. Fragile early but terrifying in the late game when tech advantages compound.',
     homeworlds: 'Jol (1R/2I), Nar (2R/3I)',
-    startingTech: ['Neural Motivator', 'Antimass Deflectors', 'Sarween Tools', 'Spec Ops II'],
+    startingTech: ['Neural Motivator', 'Antimass Deflectors', 'Sarween Tools', 'Plasma Scoring'],
     commodities: 4,
-    keyAbility: 'ANALYTICAL: Spend a strategy token to research technology. BRILLIANT: Draw 1 extra action card during Status Phase. Negative modifier on combat rolls (-1), offset by technology.',
+    keyAbility: 'FRAGILE: -1 to the result of each of your unit\'s combat rolls. ANALYTICAL: When researching a non-unit-upgrade technology, you may ignore 1 prerequisite icon on it.',
     planets: [
       { name: 'Jol', resources: 1, influence: 2, ready: true, trait: 'Industrial' },
       { name: 'Nar', resources: 2, influence: 3, ready: true, trait: 'Industrial' }
@@ -54,7 +53,7 @@ const FACTIONS = {
     homeworlds: '[0.0.0] (5R/0I), Wellon (0R/2I)',
     startingTech: ['Neural Motivator', 'Antimass Deflectors'],
     commodities: 2,
-    keyAbility: 'HARROW: Dreadnoughts also function as Carriers. ASSIMILATE: Absorb Mecatol Rex planetary card. Start with Super-Dreadnought flagship blueprint.',
+    keyAbility: 'ASSIMILATE: When you gain control of a planet, replace any PDS or space dock there with your own. HARROW: After each round of ground combat, your ships in the system may use Bombardment against the survivors.',
     planets: [
       { name: '[0.0.0]', resources: 5, influence: 0, ready: true, trait: 'Industrial' },
       { name: 'Wellon', resources: 0, influence: 2, ready: true, trait: 'Cultural' }
@@ -63,69 +62,69 @@ const FACTIONS = {
   },
   'Barony of Letnev': {
     description: 'Wealthy military power. Start with a Dreadnought and strong economy. Compensates for fewer units with Sustain Damage and economic bonuses.',
-    homeworlds: 'Arc Prime (3R/1I), Wren Terra (2R/1I)',
-    startingTech: ['Antimass Deflectors', 'Non-Euclidean Shielding'],
+    homeworlds: 'Arc Prime (4R/0I), Wren Terra (2R/1I)',
+    startingTech: ['Antimass Deflectors', 'Plasma Scoring'],
     commodities: 2,
-    keyAbility: 'MUNITIONS RESERVES: Spend 2 trade goods to produce 1 unit for free. ARMADA: No fleet limit for non-fighter ships in your home system.',
+    keyAbility: 'MUNITIONS RESERVES: At the start of each space combat round, spend 2 trade goods to re-roll any number of your dice. ARMADA: Your fleet supply limit is 2 higher than your fleet pool would normally allow.',
     planets: [
-      { name: 'Arc Prime', resources: 3, influence: 1, ready: true, trait: 'Industrial' },
+      { name: 'Arc Prime', resources: 4, influence: 0, ready: true, trait: 'Industrial' },
       { name: 'Wren Terra', resources: 2, influence: 1, ready: true, trait: 'Hazardous' }
     ],
     units: { carriers: 1, destroyers: 1, dreadnoughts: 1, fighters: 3, infantry: 3, pds: 1, spaceDocks: 1, cruisers: 0, flagships: 0, warsuns: 0 }
   },
   'Clan of Saar': {
-    description: 'Nomadic raiders. Roaming Space Docks that can move with your fleet. Excellent at rapid expansion and harassment. Punishes static players.',
-    homeworlds: 'Lisis (1R/2I), Ragh (2R/1I)',
-    startingTech: ['Chaos Mapping', 'Neural Motivator'],
+    description: 'Nomadic raiders. Expansion pays for itself in trade goods, and you can score objectives without defending every home planet. Punishes static players.',
+    homeworlds: 'Lisis II (1R/0I), Ragh (2R/1I)',
+    startingTech: ['Antimass Deflectors'],
     commodities: 3,
-    keyAbility: 'SCAVENGE: Gain trade goods when you destroy enemy ships. NOMADIC: Your space docks are mobile — they can move with your fleet.',
+    keyAbility: 'SCAVENGE: Gain 1 trade good whenever you gain control of a planet. NOMADIC: You can score objectives even without controlling every planet in your home system.',
     planets: [
-      { name: 'Lisis', resources: 1, influence: 2, ready: true, trait: 'Cultural' },
+      { name: 'Lisis II', resources: 1, influence: 0, ready: true, trait: 'Cultural' },
       { name: 'Ragh', resources: 2, influence: 1, ready: true, trait: 'Hazardous' }
     ],
     units: { carriers: 2, cruisers: 2, fighters: 2, infantry: 4, pds: 1, spaceDocks: 1, destroyers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Naalu Collective': {
     description: 'Fighter swarm and political manipulation. The "0" initiative card lets you always go first in Action Phase. Devastating fighter upgrades make your swarms lethal.',
-    homeworlds: 'Nar (2R/3I), Maaluul (0R/0I)',
-    startingTech: ['Neural Motivator', 'Neuroglaive'],
+    homeworlds: 'Maaluuk (0R/2I), Druaa (3R/1I)',
+    startingTech: ['Neural Motivator', 'Sarween Tools'],
     commodities: 3,
-    keyAbility: 'TELEPATHIC: Gift of Prescience — give any player your "0" token, they must play it. FORESIGHT: You may place 1 fighter in each system you control during Status Phase for free.',
+    keyAbility: 'TELEPATHIC: At the end of the Strategy Phase, place your "0" token on your strategy card — you act first in initiative order. FORESIGHT: When an opponent moves ships into your system, you may retreat to an adjacent empty system using a strategy pool token.',
     planets: [
-      { name: 'Nar', resources: 2, influence: 3, ready: true, trait: 'Industrial' },
-      { name: 'Maaluul', resources: 0, influence: 0, ready: true, trait: 'Cultural' }
+      { name: 'Maaluuk', resources: 0, influence: 2, ready: true, trait: 'Cultural' },
+      { name: 'Druaa', resources: 3, influence: 1, ready: true, trait: 'Industrial' }
     ],
     units: { carriers: 2, cruisers: 1, destroyers: 1, fighters: 3, infantry: 4, spaceDocks: 1, pds: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Xxcha Kingdom': {
-    description: 'Political powerhouse. Delayed Agenda effects, bonus votes, and the ability to cancel action cards. Win through diplomacy and VP accumulation, not combat.',
-    homeworlds: 'Xxcha (3R/1I), Archon Ren (2R/0I)',
-    startingTech: ['Instinct Training', 'Nullification Field'],
+    description: 'Political powerhouse. Reroll unfavorable agendas, grab free planets through diplomacy. Win through accumulation and patience, not combat.',
+    homeworlds: 'Archon Ren (2R/3I), Archon Tau (1R/1I)',
+    startingTech: ['Graviton Laser System'],
     commodities: 4,
-    keyAbility: 'QUASH: Cancel an action card (as if it were never played). POLITICAL FAVOR: Cancel an agenda and draw 2 action cards. Peace Accords — other players can\'t move ships into your systems.',
+    keyAbility: 'PEACE ACCORDS: After resolving the Diplomacy strategy card\'s primary or secondary, gain control of an adjacent unoccupied planet (not Mecatol Rex). QUASH: When an agenda is revealed, spend a strategy pool token to discard it and reveal a new one instead.',
     planets: [
-      { name: 'Xxcha', resources: 3, influence: 1, ready: true, trait: 'Cultural' },
-      { name: 'Archon Ren', resources: 2, influence: 0, ready: true, trait: 'Industrial' }
+      { name: 'Archon Ren', resources: 2, influence: 3, ready: true, trait: 'Cultural' },
+      { name: 'Archon Tau', resources: 1, influence: 1, ready: true, trait: 'Industrial' }
     ],
     units: { carriers: 2, cruisers: 1, destroyers: 1, fighters: 3, infantry: 4, pds: 1, spaceDocks: 1, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Yin Brotherhood': {
     description: 'Religious zealots with powerful conversion abilities. Sacrifice ships to devastating effect. Difficult to fight because they turn your own units against you.',
-    homeworlds: 'Darien (4R/3I)',
-    startingTech: ['Sarween Tools', 'Predictive Intelligence'],
-    commodities: 3,
-    keyAbility: 'INDOCTRINATION: Spend 2 trade goods to convert an enemy infantry to yours. RECLAMATION: Your flagship can Sustain Damage. Yin promissory note destroys all fighters in a system.',
+    homeworlds: 'Darien (4R/4I)',
+    startingTech: ['Sarween Tools'],
+    commodities: 2,
+    keyAbility: 'INDOCTRINATION: At the start of a ground combat, spend 2 influence to replace 1 of your opponent\'s participating infantry with your own. DEVOTION: After each space combat round, destroy 1 of your own cruisers/destroyers to deal 1 automatic hit to an enemy ship.',
     planets: [
-      { name: 'Darien', resources: 4, influence: 3, ready: true, trait: 'Cultural' }
+      { name: 'Darien', resources: 4, influence: 4, ready: true, trait: 'Cultural' }
     ],
     units: { carriers: 3, destroyers: 1, fighters: 4, infantry: 4, spaceDocks: 1, pds: 0, cruisers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Winnu': {
     description: 'The Mecatol Rex specialists. Your entire game revolves around a single path to the center of the galaxy. Brutal efficiency when on track — helpless when off it.',
     homeworlds: 'Winnu (3R/4I)',
-    startingTech: ['Sarween Tools', '(choose any 1 tech no other faction starts with)'],
+    startingTech: ['(choose any 1 technology with no prerequisites)'],
     commodities: 3,
-    keyAbility: 'BLOOD TIES: If you control Mecatol Rex, you may score 1 additional VP during Status Phase. RECLAMATION: Place a space dock on Mecatol Rex when you take it.',
+    keyAbility: 'BLOOD TIES: You don\'t need to spend influence to remove the Custodians Token from Mecatol Rex. RECLAMATION: After a tactical action where you take Mecatol Rex, place a free PDS and space dock there from reinforcements.',
     planets: [
       { name: 'Winnu', resources: 3, influence: 4, ready: true, trait: 'Cultural' }
     ],
@@ -133,33 +132,32 @@ const FACTIONS = {
   },
   'Mentak Coalition': {
     description: 'Pirates and ambushers. Fire before anyone else, steal trade goods, and leverage Action Cards better than anyone. Punishes passive players hard.',
-    homeworlds: 'Moll Terminus (2R/0I), Quinarra (3R/1I)',
-    startingTech: ['Sarween Tools', 'Mirror Computing'],
+    homeworlds: 'Moll Primus (4R/1I)',
+    startingTech: ['Sarween Tools', 'Plasma Scoring'],
     commodities: 2,
-    keyAbility: 'PILLAGE: After combat round, steal 1 trade good from opponent with more than 3. AMBUSH: Before combat, fire 2 Cruiser shots and 1 Destroyer shot (no return fire).',
+    keyAbility: 'AMBUSH: At the start of space combat, roll 1 die for up to 2 of your cruisers/destroyers in the system — hits are assigned before normal combat. PILLAGE: After a neighbor gains trade goods or resolves a transaction, if they hold 3+, you may take one.',
     planets: [
-      { name: 'Moll Terminus', resources: 2, influence: 0, ready: true, trait: 'Hazardous' },
-      { name: 'Quinarra', resources: 3, influence: 1, ready: true, trait: 'Industrial' }
+      { name: 'Moll Primus', resources: 4, influence: 1, ready: true, trait: 'Industrial' }
     ],
     units: { carriers: 2, cruisers: 2, fighters: 3, infantry: 4, pds: 1, spaceDocks: 1, destroyers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Nekro Virus': {
-    description: 'Completely unique mechanics. Steal technologies from dead players, convert fallen troops into your own. Fundamentally different from every other faction.',
-    homeworlds: 'Mordai II (3R/0I)',
-    startingTech: ['Valefar Assimilator X', 'Valefar Assimilator Y'],
+    description: 'Completely unique mechanics. Steal technology through combat and political prediction instead of researching it normally. Fundamentally different from every other faction.',
+    homeworlds: 'Mordai II (4R/0I)',
+    startingTech: ['Dacxive Animators', 'Valefar Assimilator X', 'Valefar Assimilator Y'],
     commodities: 3,
-    keyAbility: 'PROPAGATION: When units die, you may place infantry there instead. GALACTIC THREAT: Steal a technology from any faction that researches one during the action phase.',
+    keyAbility: 'GALACTIC THREAT: You cannot vote on agendas, but may predict an outcome — if correct, steal a technology from a player who voted that way. TECHNOLOGICAL SINGULARITY: Steal a technology when you destroy an opponent unit in combat. PROPAGATION: You cannot research technology normally — gain 3 command tokens instead whenever you would.',
     planets: [
-      { name: 'Mordai II', resources: 3, influence: 0, ready: true, trait: 'Hazardous' }
+      { name: 'Mordai II', resources: 4, influence: 0, ready: true, trait: 'Hazardous' }
     ],
     units: { carriers: 2, cruisers: 2, destroyers: 2, fighters: 3, infantry: 2, spaceDocks: 2, pds: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Embers of Muaat': {
     description: 'One trick, and that trick is a War Sun. Build the most powerful unit in the game and use it to obliterate everything. Extremely high variance.',
     homeworlds: 'Muaat (4R/1I)',
-    startingTech: ['Magmus Reactor', 'Plasma Scoring'],
+    startingTech: ['Plasma Scoring'],
     commodities: 4,
-    keyAbility: 'STAR FORGE: Once per round, produce 1 unit using your War Sun\'s production capacity. UNSTABLE PLANET: Muaat can produce War Suns at no additional cost.',
+    keyAbility: 'STAR FORGE: Spend 1 strategy pool token to place 2 fighters or 1 destroyer in a system containing your War Sun. GASHLAI PHYSIOLOGY: Your ships can move through supernovas as if they were empty space.',
     planets: [
       { name: 'Muaat', resources: 4, influence: 1, ready: true, trait: 'Hazardous' }
     ],
@@ -168,9 +166,9 @@ const FACTIONS = {
   'Ghosts of Creuss': {
     description: 'Wormhole manipulators. Move through wormholes others can\'t use and reshape the galaxy\'s geography to your advantage. Complex but uniquely powerful.',
     homeworlds: 'Creuss (4R/2I)',
-    startingTech: ['Wormhole Generator'],
+    startingTech: ['Gravity Drive'],
     commodities: 4,
-    keyAbility: 'QUANTUM ENTANGLEMENT: Treat all wormholes as adjacent to each other. SLIPSTREAM: Move through wormholes in systems with enemy ships. Place wormholes via tech.',
+    keyAbility: 'QUANTUM ENTANGLEMENT: You treat all systems containing an alpha or beta wormhole as adjacent to each other. SLIPSTREAM: +1 move value for ships starting movement in your home system or a wormhole system.',
     planets: [
       { name: 'Creuss', resources: 4, influence: 2, ready: true, trait: 'Cultural' }
     ],
@@ -181,7 +179,7 @@ const FACTIONS = {
     homeworlds: 'Nestphar (3R/2I)',
     startingTech: ['Magen Defense Grid'],
     commodities: 3,
-    keyAbility: 'MITOSIS: Your infantry can produce 1 infantry per round (they are also space docks). AWAKEN: Your Letani Warrior II infantry also count as space docks.',
+    keyAbility: 'MITOSIS: Your space docks cannot produce infantry. Instead, at the start of each Status Phase, place 1 infantry from reinforcements on any planet you control.',
     planets: [
       { name: 'Nestphar', resources: 3, influence: 2, ready: true, trait: 'Hazardous' }
     ],
@@ -200,13 +198,13 @@ const FACTIONS = {
     units: { carriers: 2, cruisers: 2, destroyers: 1, infantry: 5, pds: 1, spaceDocks: 1, fighters: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
   'Nomad': {
-    description: '(Prophecy of Kings) The Cavalry flagship is the strongest ship in the game. Copy objectives, use powerful action cards, and leverage the best flagship ability in TI4.',
-    homeworlds: 'Arcturus (2R/3I)',
-    startingTech: ['Sling Relay', 'Predictive Intelligence'],
+    description: '(Prophecy of Kings) Triple agent value and steady Agenda Phase income. A flexible, opportunistic faction with no fixed homeworld to defend.',
+    homeworlds: 'Arcturus (4R/4I)',
+    startingTech: ['Sling Relay'],
     commodities: 4,
-    keyAbility: 'THE CAVALRY: Your Flagship counts as a scoring unit. FUTURE SIGHT: Copy a scored public objective. SPARK OF THE FUTURE: Score secret objectives more easily.',
+    keyAbility: 'THE COMPANY: You start with 3 faction agents instead of the usual 1. FUTURE SIGHT: During the Agenda Phase, after an outcome you voted for or predicted resolves, gain 1 trade good.',
     planets: [
-      { name: 'Arcturus', resources: 2, influence: 3, ready: true, trait: 'Cultural' }
+      { name: 'Arcturus', resources: 4, influence: 4, ready: true, trait: 'Cultural' }
     ],
     units: { carriers: 2, destroyers: 2, fighters: 3, infantry: 4, pds: 1, spaceDocks: 1, cruisers: 0, dreadnoughts: 0, flagships: 1, warsuns: 0 }
   },
@@ -215,7 +213,7 @@ const FACTIONS = {
     homeworlds: 'Ixth (3R/5I)',
     startingTech: ['Bio-Stims', 'Predictive Intelligence'],
     commodities: 3,
-    keyAbility: 'IMPERIA: For every unique CC on Mahact\'s flagship, raise your fleet limit by 1. HUBRIS: Edict and Imperia command tokens stolen from defeated enemies fuel your war machine.',
+    keyAbility: 'EDICT: When you win a combat, place 1 of your opponent\'s command tokens into your fleet pool — it raises your fleet limit but can\'t be redistributed. IMPERIA: While an opponent\'s token sits in your fleet pool, you may use their unlocked commander ability. HUBRIS: You purge your Alliance promissory note during setup.',
     planets: [
       { name: 'Ixth', resources: 3, influence: 5, ready: true, trait: 'Cultural' }
     ],
@@ -225,11 +223,11 @@ const FACTIONS = {
 
 // Opponents pool — picks 3 that don't include the player's faction
 const OPPONENT_POOL = [
-  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Sarween Tools', 'Quantum Datahub Node'], tradeGoods: 3, attitude: 'neutral' },
-  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Spec Ops II'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Antimass Deflectors', 'Sarween Tools'], tradeGoods: 3, attitude: 'neutral' },
+  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral' },
   { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], planets: ['[0.0.0]', 'Wellon'],            unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Antimass Deflectors'], tradeGoods: 0, attitude: 'neutral' },
-  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Non-Euclidean Shielding'], tradeGoods: 2, attitude: 'neutral' },
-  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], planets: ['Xxcha', 'Archon Ren'],          unitSummary: 'Standard Xxcha opening', technologies: ['Instinct Training', 'Nullification Field'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Plasma Scoring'], tradeGoods: 2, attitude: 'neutral' },
+  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], planets: ['Archon Ren', 'Archon Tau'],     unitSummary: 'Standard Xxcha opening', technologies: ['Graviton Laser System'], tradeGoods: 0, attitude: 'neutral' },
 ];
 
 function getOpponents(playerFaction, count) {

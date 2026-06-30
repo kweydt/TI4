@@ -220,6 +220,37 @@
     font-style: italic;
   }
 
+  .fs-lore-box { position: relative; }
+  .fs-lore-text {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.65;
+    max-height: 3.3em;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+  .fs-lore-text.expanded { max-height: 400px; }
+  .fs-lore-fade {
+    position: absolute;
+    bottom: 22px; left: 0; right: 0;
+    height: 24px;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+  }
+  .fs-lore-fade.hidden { display: none; }
+  .fs-lore-toggle {
+    background: none;
+    border: none;
+    color: var(--blue);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    padding: 4px 0 0;
+    text-transform: uppercase;
+  }
+  .fs-lore-toggle:hover { color: var(--text); }
+
   .fs-section-title {
     font-family: var(--font-mono);
     font-size: 10px;
@@ -1523,171 +1554,187 @@ const FACTIONS = {
   'Federation of Sol': {
     abbr: 'SOL', color: '#4a9eff', difficulty: 1, pok: false,
     tagline: "Humanity's finest. The best faction for learning TI4 — strong fundamentals, no tricks needed.",
-    homeworlds: ['Jord (4R/2I)', 'Moll Primus (2R/3I)'],
+    lore: 'After the fall of the Lazax Empire plunged the galaxy into the chaotic Twilight Wars, humanity was nearly erased from galactic relevance — scattered, leaderless, and preyed upon by stronger powers. The Federation of Sol was forged from the survivors: refugee fleets, rebuilt colonies, and a fierce determination never to be sidelined again. They lack the exotic abilities of older species, but they have something many don\'t: institutional discipline, and the will to rebuild an empire from nothing.',
+    homeworlds: ['Jord (4R/2I)'],
     startingTech: ['Neural Motivator', 'Antimass Deflectors'],
-    commodities: 3,
-    ability: 'ORBITAL DROP lets you move infantry directly from carriers into invaded systems mid-combat. GENESIS lets you build a space dock anywhere you control. Both reward aggressive expansion.',
-    pros: ['Easiest to learn — mechanics are transparent', 'Strong infantry (6 to start)', 'Neural Motivator gives extra action cards', 'Excellent carrier capacity for expansion'],
-    cons: ['No flashy racial abilities to fall back on', 'Opponents can read your game plan easily', 'Relies on outplaying, not out-tricking'],
-    tip: 'Take Leadership (card 1) in Round 1. Three bonus command tokens gives you an immediate tempo advantage and pairs perfectly with your aggressive infantry strategy. Expand early and often — your carriers are built for it.'
+    commodities: 4,
+    ability: 'ORBITAL DROP: Spend 1 strategy pool token to place 2 infantry from reinforcements on a planet you control. VERSATILE: When you gain command tokens during the Status Phase, gain 1 additional token. Both reward fast, flexible deployment.',
+    pros: ['Easiest to learn — mechanics are transparent', 'Strong infantry (6 to start)', 'Versatile means you out-pace everyone on command tokens', 'High commodities (4) for a non-trade faction'],
+    cons: ['Single homeworld — less production redundancy than 2-planet factions', 'No flashy racial abilities to fall back on', 'Opponents can read your game plan easily'],
+    tip: 'Take Leadership (card 1) in Round 1. Three bonus command tokens gives you an immediate tempo advantage, and Versatile means every later token grab is even better. Expand early and often.'
   },
   'Emirates of Hacan': {
     abbr: 'HAC', color: '#d4a843', difficulty: 2, pok: false,
     tagline: 'Trade lords. Win the galaxy not through war, but by controlling who gets resources and who doesn\'t.',
+    lore: 'Descended from desert nomads who once controlled trade routes across their homeworld, the Hacan carried that same instinct into the stars, building merchant dynasties instead of armies. To the Hacan, war is simply bad for business — a disruption to the flow of goods and favors that actually decides who rules the galaxy. They prefer to let rivals exhaust each other while quietly buying influence over the survivors.',
     homeworlds: ['Arretze (2R/0I)', 'Kamdorn (0R/1I)', 'Hercant (1R/1I)'],
-    startingTech: ['Sarween Tools', 'Quantum Datahub Node'],
-    commodities: 3,
-    ability: 'Trade without Action Cards (no one else can). Your promissory note gives another player your racial ability for a round. Negotiate freely — you are the galaxy\'s bank.',
-    pros: ['Richest faction — trade goods flow freely', 'Deals and diplomacy give political power', 'Hard to justify attacking a good trade partner', 'Sarween Tools reduces production costs immediately'],
-    cons: ['Weak military — you rely on others to fight', 'Dependent on neighbors for trade', 'You need the Trade strategy card to maximize income', 'Poor at Mecatol Rex early'],
-    tip: 'Make early trade deals with everyone. Your Quantum Datahub Node lets you share action cards for mutual benefit. Keep at least 2 neighbors friendly — you can\'t fight your way out of trouble.'
+    startingTech: ['Antimass Deflectors', 'Sarween Tools'],
+    commodities: 6,
+    ability: 'MASTERS OF TRADE: You don\'t spend a command token to resolve the Trade strategy card\'s secondary ability. GUILD SHIPS: You can negotiate transactions with players who aren\'t your neighbor. ARBITERS: Action cards can be exchanged as part of a transaction.',
+    pros: ['Highest commodity income in the game (6)', 'Trade reach extends to non-neighbors — deals with anyone', 'Action-card trading creates unique diplomatic leverage', 'Sarween Tools reduces production costs immediately'],
+    cons: ['Weak military — you rely on others to fight', 'Income depends on having willing trade partners', 'You need the Trade strategy card to maximize income', 'Poor at Mecatol Rex early'],
+    tip: 'Make early trade deals with everyone — Guild Ships means even non-neighbors are fair game. Take full advantage whenever anyone else plays the Trade card, since your secondary is free. Keep at least 2 partners friendly.'
   },
   'Universities of Jol-Nar': {
     abbr: 'J-N', color: '#9b5de5', difficulty: 3, pok: false,
     tagline: 'The tech faction. Start with 4 technologies. By Round 4 you\'ll have toys no one else can counter.',
+    lore: 'Generations ago, the Jol-Nar made a civilizational choice: abandon martial tradition entirely and devote every resource to scientific inquiry. The result is a society that reveres knowledge the way others revere gods — brilliant, fragile, and constitutionally incapable of backing down from a research problem. Their bodies are weak and their combat doctrine outdated, but by the time their rivals notice, the Jol-Nar already have the technology to make it irrelevant.',
     homeworlds: ['Jol (1R/2I)', 'Nar (2R/3I)'],
-    startingTech: ['Neural Motivator', 'Antimass Deflectors', 'Sarween Tools', 'Spec Ops II'],
+    startingTech: ['Neural Motivator', 'Antimass Deflectors', 'Sarween Tools', 'Plasma Scoring'],
     commodities: 4,
-    ability: 'Research technology more cheaply than anyone. Draw extra action cards. ANALYTICAL lets you spend a strategy token to research. The catch: −1 to all combat rolls.',
-    pros: ['4 starting technologies — massive head start', 'Best faction in the late game', 'High commodity income (4)', 'Can research almost anything by round 4'],
+    ability: 'FRAGILE: −1 to the result of each of your unit\'s combat rolls. ANALYTICAL: When you research a technology that isn\'t a unit upgrade, you may ignore 1 prerequisite on it. The trade-off is brutal early, but it compounds fast.',
+    pros: ['4 starting technologies — massive head start', 'Analytical lets you skip prerequisites other factions can\'t', 'Best faction in the late game', 'High commodity income (4)'],
     cons: ['Combat penalty (−1) makes early fights costly', 'Resource-poor homeworlds make expansion slow', 'Punished hard if you fall behind on tech', 'Steeper learning curve than Sol'],
-    tip: 'Research aggressively in Round 1. Spec Ops II upgrades your infantry — don\'t neglect it. Pick the Technology strategy card early to stay ahead. Avoid early combat until your tech advantage compounds.'
+    tip: 'Research aggressively in Round 1 — Analytical makes every non-unit-upgrade tech cheaper to reach. Pick the Technology strategy card early to stay ahead. Avoid early combat until your tech advantage compounds.'
   },
   'L1Z1X Mindnet': {
     abbr: 'L1Z', color: '#e8521a', difficulty: 2, pok: false,
     tagline: 'Pure military aggression. Upgraded dreadnoughts, assault cannons, and a flagship that instills dread.',
+    lore: 'The L1Z1X were once ordinary human colonists, stranded on a world too hostile to survive without radical adaptation. They submitted to cybernetic assimilation, linking mind to mind until individual identity dissolved into a single networked intelligence. What remains no longer remembers being human — only the directive to expand, absorb, and optimize, system by system.',
     homeworlds: ['[0.0.0] (5R/0I)', 'Wellon (0R/2I)'],
     startingTech: ['Neural Motivator', 'Antimass Deflectors'],
     commodities: 2,
-    ability: 'HARROW: Your dreadnoughts also function as carriers (troops and ships in one). ASSIMILATE: Absorb Mecatol Rex\'s planetary card. Super-Dreadnought starts are available.',
-    pros: ['Enormous resource production ([0.0.0] = 5R)', 'Dreadnoughts that carry troops are extremely efficient', 'Strong early military presence deters aggression', 'Natural path to Mecatol Rex'],
+    ability: 'ASSIMILATE: When you gain control of a planet, replace any PDS or space dock there with one of your own. HARROW: After each round of ground combat, your ships in the system may use Bombardment against the surviving defenders.',
+    pros: ['Enormous resource production ([0.0.0] = 5R)', 'Assimilate turns every conquered planet into instant infrastructure', 'Harrow punishes failed defenses with free bombardment', 'Natural path to Mecatol Rex'],
     cons: ['Only 2 commodities — trade income is low', 'Combat-focused can burn command tokens fast', 'Little flexibility if the military plan fails', 'Telegraphs your strategy from turn 1'],
-    tip: 'Your massive home planet funds rapid fleet production. Push toward Mecatol Rex in Round 2. Use your dreadnoughts\' carrier function to invade — 1 unit doing 2 jobs is efficient.'
+    tip: 'Your massive home planet funds rapid fleet production. Push toward Mecatol Rex in Round 2 — Assimilate means captured planets come with instant infrastructure. Harrow rewards finishing ground combats decisively.'
   },
   'Barony of Letnev': {
     abbr: 'LET', color: '#c4cedf', difficulty: 2, pok: false,
     tagline: 'Wealthy military aristocracy. Start with a dreadnought and compensate for fewer units with economic bonuses.',
-    homeworlds: ['Arc Prime (3R/1I)', 'Wren Terra (2R/1I)'],
-    startingTech: ['Antimass Deflectors', 'Non-Euclidean Shielding'],
+    lore: 'Rising from the lawless chaos that followed the Lazax Empire\'s collapse, the Barony built an authoritarian military state on the principle that order requires force. Centuries of armament and martial law have made the Letnev wealthy, disciplined, and utterly comfortable using both wealth and weapons interchangeably to get what they want.',
+    homeworlds: ['Arc Prime (4R/0I)', 'Wren Terra (2R/1I)'],
+    startingTech: ['Antimass Deflectors', 'Plasma Scoring'],
     commodities: 2,
-    ability: 'MUNITIONS RESERVES: Spend 2 trade goods to produce 1 unit for free each round. ARMADA: No fleet supply limit in your home system. Non-Euclidean Shielding gives your flagship Sustain.',
-    pros: ['Start with a dreadnought — immediate military presence', 'Sustain Damage tech means units survive longer', 'Trade good production smooths out resource shortfalls', 'Strong late-game fleet building'],
+    ability: 'MUNITIONS RESERVES: At the start of each space combat round, spend 2 trade goods to re-roll any number of your dice. ARMADA: Your fleet supply limit is 2 higher than your fleet pool would normally allow.',
+    pros: ['Start with a dreadnought — immediate military presence', 'Armada gives extra fleet capacity everywhere', 'Munitions Reserves turns trade goods into combat swings', 'Strong late-game fleet building'],
     cons: ['Low commodity count (2)', 'Fewer starting units than most factions', 'Needs economic setup before rolling', 'Combat-dependent playstyle'],
-    tip: 'Use your dreadnought to deter early aggression. Hoard trade goods for Munitions Reserves — free units add up fast. Non-Euclidean Shielding on your flagship makes it nearly unkillable.'
+    tip: 'Use your dreadnought to deter early aggression. Hoard trade goods for Munitions Reserves re-rolls — they can swing a close fight. Armada lets your fleets mass bigger than the token count alone suggests.'
   },
   'Clan of Saar': {
     abbr: 'SAR', color: '#4ecb71', difficulty: 2, pok: false,
-    tagline: 'Nomadic raiders. Your space docks move. Expand rapidly, strike opportunistically, never get pinned down.',
-    homeworlds: ['Lisis (1R/2I)', 'Ragh (2R/1I)'],
-    startingTech: ['Chaos Mapping', 'Neural Motivator'],
+    tagline: 'Nomadic raiders. Expansion pays for itself, and you don\'t need to defend home to keep scoring. Never get pinned down.',
+    lore: 'Exiled from a dying homeworld generations ago, the Saar never settled anywhere again — their entire civilization now lives aboard mobile fleets and portable industry, ready to relocate at a moment\'s notice. They owe allegiance to no system and no government, only to the next opportunity, which they are always ready to seize before anyone else even notices it.',
+    homeworlds: ['Lisis II (1R/0I)', 'Ragh (2R/1I)'],
+    startingTech: ['Antimass Deflectors'],
     commodities: 3,
-    ability: 'SCAVENGE: Gain trade goods when you destroy enemy ships. NOMADIC: Your space docks can move with your fleet — production follows your expansion, not your home system.',
-    pros: ['Mobile space docks enable forward production', 'Scavenge turns combat wins into economic wins', 'Two cruisers give strong early mobility', 'Hard to lock down strategically'],
-    cons: ['Weak home system if you lose your docks', 'Chaotic playstyle is hard to plan around', 'Chaos Mapping (wormholes) requires map awareness', 'Lower influence on home planets'],
-    tip: 'Move your space dock toward the front lines by Round 2. Scavenge means every fight pays you — pick skirmishes you can win. Chaos Mapping lets you appear anywhere with a wormhole.'
+    ability: 'SCAVENGE: After you gain control of a planet, gain 1 trade good. NOMADIC: You can score objectives even if you don\'t control every planet in your home system. Chaos Mapping is a faction-specific technology you can research later for a wormhole shortcut.',
+    pros: ['Scavenge turns expansion itself into trade goods', 'Nomadic frees you from defending every home planet', 'Two cruisers give strong early mobility', 'Hard to lock down strategically'],
+    cons: ['Weak home system if it falls', 'Chaotic playstyle is hard to plan around', 'Needs to research Chaos Mapping for its wormhole bonus', 'Lower influence on home planets'],
+    tip: 'Expand aggressively — Scavenge means every new planet pays for itself. Nomadic lets you leave home planets undefended without losing objective eligibility. Research Chaos Mapping when you can for a mobility spike.'
   },
   'Naalu Collective': {
     abbr: 'NAA', color: '#4a9eff', difficulty: 2, pok: false,
     tagline: 'Fighter swarms and initiative control. Your "0" token means you always act first. Your fighters hit like cruisers.',
-    homeworlds: ['Nar (2R/3I)', 'Maaluul (0R/0I)'],
-    startingTech: ['Neural Motivator', 'Neuroglaive'],
+    lore: 'The Naalu are a psychic species gifted with genuine precognition, a faculty their society has spent millennia refining into a political art form. They rarely need to fight battles they can simply see coming — and arrange to happen to someone else instead. Quiet manipulation, not brute strength, is how the Naalu have outlasted galactic empires.',
+    homeworlds: ['Maaluuk (0R/2I)', 'Druaa (3R/1I)'],
+    startingTech: ['Neural Motivator', 'Sarween Tools'],
     commodities: 3,
-    ability: 'TELEPATHIC: Give any player your 0 token — they must play it, acting last. You keep initiative. FORESIGHT: Place fighters in controlled systems for free during Status Phase.',
-    pros: ['0 initiative token means you act first — always', 'Fighters grow into the best combat ships in the game', 'Free fighter placement snowballs fast', 'Strong political influence through token manipulation'],
-    cons: ['Maaluul has 0 resources and 0 influence (it\'s a trap)', 'Weak early combat before fighter upgrades', 'Depends heavily on fighter tech upgrades', 'Gift of Prescience requires political timing'],
-    tip: 'Give your 0 token to the most dangerous player to slow them down. Focus tech on fighter upgrades — Neuroglaive is your foundation. Nar gives great influence for voting.'
+    ability: 'TELEPATHIC: At the end of the Strategy Phase, place your "0" token on your strategy card — you go first in initiative order. FORESIGHT: When an opponent moves ships into a system containing your ships, you may retreat into an adjacent empty system using a strategy pool token.',
+    pros: ['Telepathic guarantees you act first in the Action Phase', 'Foresight lets you dodge unfavorable fights for free', 'Strong political influence through token manipulation', 'Druaa gives solid resource production'],
+    cons: ['Maaluuk has very little resource value — slow to fund a big fleet', 'Weak early combat before fighter/ship upgrades', 'Relies on reading the board to use Foresight well', 'Less raw firepower than aggressive factions'],
+    tip: 'Telepathic means you always act first in the Action Phase — use that tempo to grab key systems before anyone reacts. Foresight can save a fleet that wandered into a bad fight, so don\'t panic if you\'re intercepted.'
   },
   'Xxcha Kingdom': {
     abbr: 'XXC', color: '#4ecb71', difficulty: 2, pok: false,
-    tagline: 'Political kingmakers. Cancel action cards, manipulate agendas, and score VP without winning battles.',
-    homeworlds: ['Xxcha (3R/1I)', 'Archon Ren (2R/0I)'],
-    startingTech: ['Instinct Training', 'Nullification Field'],
+    tagline: 'Political kingmakers. Reroll bad agendas, grab free planets through diplomacy, and score VP without winning battles.',
+    lore: 'Older than most spacefaring civilizations in the galaxy, the Xxcha Kingdom has survived by mastering one discipline above all others: patience. Centuries of diplomacy have taught them that empires fall to their own impatience far more often than to enemy fleets — so the Xxcha simply wait, negotiate, and let rivals destroy themselves on schedules the Xxcha quietly set.',
+    homeworlds: ['Archon Ren (2R/3I)', 'Archon Tau (1R/1I)'],
+    startingTech: ['Graviton Laser System'],
     commodities: 4,
-    ability: 'QUASH: Cancel an action card before it resolves. POLITICAL FAVOR: Cancel an agenda and draw 2 action cards. Your promissory note prevents ships entering your systems.',
-    pros: ['Highest commodity income (4)', 'Agenda manipulation wins games at 8–9 VP', 'Can negate opponent action cards at critical moments', 'Great for learning political mechanics'],
-    cons: ['Weaker military than most factions', 'Dependent on Agenda Phase to close out games', 'Needs to accumulate VP through objectives, not combat', 'Punished if political strategies are countered'],
-    tip: 'Don\'t try to fight everyone. Secure objectives quietly and use your political tools to control the endgame. Nullification Field makes your planets very hard to take.'
+    ability: 'PEACE ACCORDS: After you resolve the Diplomacy strategy card\'s primary or secondary ability, you may gain control of an adjacent unoccupied planet (not Mecatol Rex). QUASH: When an agenda is revealed, you may spend a strategy pool token to discard it and reveal a new one instead.',
+    pros: ['Highest commodity income (4)', 'Quash lets you reroll unfavorable agendas before they\'re even voted on', 'Peace Accords turns Diplomacy picks into free planet grabs', 'Great for learning political mechanics'],
+    cons: ['Weaker military than most factions', 'Single starting tech is a slow opening', 'Needs to accumulate VP through objectives, not combat', 'Punished if political strategies are countered'],
+    tip: 'Don\'t try to fight everyone. Take Diplomacy when you can — Peace Accords turns it into a free planet. Quash is your safety valve against an agenda that would hurt you badly; save a strategy token for it.'
   },
   'Yin Brotherhood': {
     abbr: 'YIN', color: '#c4cedf', difficulty: 2, pok: false,
     tagline: 'Religious zealots with conversion powers. Sacrifice ships for devastating effects. Hard to fight conventionally.',
-    homeworlds: ['Darien (4R/3I)'],
-    startingTech: ['Sarween Tools', 'Predictive Intelligence'],
-    commodities: 3,
-    ability: 'INDOCTRINATION: Spend 2 trade goods to convert an enemy infantry to yours — in any system. RECLAMATION: Your flagship can Sustain Damage. Yin promissory destroys all fighters.',
-    pros: ['Single powerful homeworld (4R/3I)', 'Conversion mechanic neutralizes enemy infantry', 'Three carriers let you project force early', 'Predictive Intelligence is a strong utility tech'],
-    cons: ['No PDS at start — vulnerable to bombardment', 'Indoctrination is expensive in trade goods', 'Weaker fleet without fighter screens early', 'Sacrificial mechanics require careful resource management'],
-    tip: 'Use Indoctrination surgically — converting troops behind enemy lines is worth 2 trade goods when it wins a key invasion. Keep trade goods flowing through Sarween Tools.'
+    lore: 'Built around a fanatic doctrine of cosmic transcendence, the Yin Brotherhood believe sacrifice — of self, of soldiers, even of captured enemies repurposed for the cause — is the truest expression of faith. They do not so much defeat their enemies as convert them, turning conquered forces into instruments of the same zealotry that conquered them.',
+    homeworlds: ['Darien (4R/4I)'],
+    startingTech: ['Sarween Tools'],
+    commodities: 2,
+    ability: 'INDOCTRINATION: At the start of a ground combat, spend 2 influence to replace one of your opponent\'s participating infantry with one of your own. DEVOTION: After each space combat round, you may destroy one of your own cruisers or destroyers to deal 1 automatic hit to an enemy ship in the system.',
+    pros: ['Single powerful homeworld (4R/4I)', 'Indoctrination can flip a ground invasion mid-fight', 'Devotion lets a losing fleet trade up before going down', 'Three carriers let you project force early'],
+    cons: ['Low commodities (2)', 'No PDS at start — vulnerable to bombardment', 'Indoctrination costs influence, competing with your voting budget', 'Sacrificial mechanics require careful resource management'],
+    tip: 'Use Indoctrination surgically — converting a key defender mid-combat can flip an invasion you\'d otherwise lose. Devotion means even a losing space battle can cost your opponent dearly before your ships go down.'
   },
   'Winnu': {
     abbr: 'WIN', color: '#9b5de5', difficulty: 3, pok: false,
     tagline: 'Mecatol Rex specialists. Your entire game is a single-minded rush to the center. Devastating when on track.',
+    lore: 'Self-proclaimed heirs to the fallen Lazax Empire, the Winnu have never accepted that the old imperial throne is gone for good. Every Winnu institution, every alliance, every campaign exists in service of one obsession: retaking Mecatol Rex and restoring what they see as the rightful order of the galaxy — with themselves, naturally, back on the throne.',
     homeworlds: ['Winnu (3R/4I)'],
-    startingTech: ['Sarween Tools', '(pick any 1 tech no other faction starts with)'],
+    startingTech: ['(choose any 1 technology with no prerequisites)'],
     commodities: 3,
-    ability: 'BLOOD TIES: Score 1 extra VP during Status Phase if you control Mecatol Rex. RECLAMATION: Place a space dock on Mecatol Rex when you take it. Your flagship reduces Mecatol Rex invasion cost.',
-    pros: ['Mecatol Rex scoring is incredibly powerful when active', 'Winnu homeworld has 4 influence — massive voting power', 'Extremely focused gameplan with clear priorities', 'Can choose any starting tech — huge flexibility'],
-    cons: ['Single homeworld makes production slow', 'Weakest military of any faction', 'Entirely Mecatol Rex dependent — if blocked, you lose', 'Opponents will often coordinate to remove you from Mecatol Rex'],
-    tip: 'Beeline for Mecatol Rex through the most direct route. Take the Technology card early to get your flagship online. Blood Ties scoring + Mecatol Rex control = 2 VP per Status Phase if things go right.'
+    ability: 'BLOOD TIES: You don\'t need to spend influence to remove the Custodians Token from Mecatol Rex. RECLAMATION: After a tactical action where you gain control of Mecatol Rex, you may place a free PDS and space dock there from reinforcements.',
+    pros: ['Blood Ties makes taking Mecatol Rex essentially free', 'Reclamation turns Mecatol Rex into an instant fortress and production hub', 'Winnu homeworld has 4 influence — strong voting power', 'Free choice of starting tech — high flexibility'],
+    cons: ['Single homeworld makes production slow', 'Weakest military of any faction', 'Entirely Mecatol Rex dependent — if blocked, you fall behind', 'Opponents will often coordinate to remove you from Mecatol Rex'],
+    tip: 'Beeline for Mecatol Rex — Blood Ties removes the usual influence cost, so you can take it earlier than anyone else can afford to. Reclamation then turns it into a defensible production base in the same move.'
   },
   'Mentak Coalition': {
     abbr: 'MEN', color: '#e8521a', difficulty: 3, pok: false,
     tagline: 'Pirates and ambushers. Strike before combat begins. Steal trade goods. Punish passive opponents relentlessly.',
-    homeworlds: ['Moll Terminus (2R/0I)', 'Quinarra (3R/1I)'],
-    startingTech: ['Sarween Tools', 'Mirror Computing'],
+    lore: 'Descendants of prisoners exiled to a brutal penal world by the old empire, the Mentak forged a culture of piracy and ambush from the wreckage of their imprisonment. They trust no government, least of all one that might exile them again, and they\'ve built an entire military doctrine around striking first, fast, and without warning.',
+    homeworlds: ['Moll Primus (4R/1I)'],
+    startingTech: ['Sarween Tools', 'Plasma Scoring'],
     commodities: 2,
-    ability: 'PILLAGE: After combat, steal 1 trade good from any opponent with more than 3. AMBUSH: Before space combat begins, deal 2 hits with cruisers and 1 with a destroyer — no return fire.',
-    pros: ['Ambush makes attacking you extremely costly', 'Pillage creates passive income from wealthy neighbors', 'Two cruisers = strong early naval presence', 'Mirror Computing is excellent with action cards'],
-    cons: ['Low commodities (2)', 'Ambush requires good ship positioning', 'Pillage only activates if opponent has 4+ TG', 'Aggressive playstyle burns command tokens quickly'],
-    tip: 'Position cruisers on likely invasion routes — Ambush fires before anyone else gets a shot. Sit next to trade-heavy factions (Hacan, Xxcha) to maximize Pillage income.'
+    ability: 'AMBUSH: At the start of space combat, roll 1 die for up to 2 of your cruisers or destroyers in the system — each hit is assigned before normal combat begins. PILLAGE: After a neighbor gains trade goods or resolves a transaction, if they hold 3 or more, you may take one.',
+    pros: ['Ambush gets free hits in before normal combat even starts', 'Pillage creates passive income from wealthy neighbors', 'Plasma Scoring adds even more pre-combat damage', 'Strong early naval presence'],
+    cons: ['Low commodities (2)', 'Single homeworld — less production redundancy', 'Pillage only triggers against neighbors holding 3+ trade goods', 'Aggressive playstyle burns command tokens quickly'],
+    tip: 'Position cruisers and destroyers on likely invasion routes — Ambush fires before anyone else gets a shot, and Plasma Scoring stacks another free hit on top. Settle next to trade-heavy factions (Hacan, Xxcha) to maximize Pillage income.'
   },
   'Nekro Virus': {
     abbr: 'NEK', color: '#9b5de5', difficulty: 3, pok: false,
-    tagline: 'Completely unique. Steal technologies from defeated enemies. Convert fallen troops. Nothing else plays like this.',
-    homeworlds: ['Mordai II (3R/0I)'],
-    startingTech: ['Valefar Assimilator X', 'Valefar Assimilator Y'],
+    tagline: 'Completely unique. Steal technology through combat and political prediction. Can never vote or research the normal way. Nothing else plays like this.',
+    lore: 'The Nekro Virus is not a civilization in any conventional sense — it is a self-replicating intelligence that consumes technology and biology alike, repurposing both toward its own propagation. It has no diplomacy, no culture, and no goal beyond assimilation, which makes it one of the few factions in the galaxy that genuinely cannot be reasoned with.',
+    homeworlds: ['Mordai II (4R/0I)'],
+    startingTech: ['Dacxive Animators', 'Valefar Assimilator X', 'Valefar Assimilator Y'],
     commodities: 3,
-    ability: 'PROPAGATION: When enemy units die in combat, place 1 Nekro infantry there instead. GALACTIC THREAT: When any faction researches technology, you may copy it using an Assimilator.',
-    pros: ['Two space docks at start — huge production capacity', 'Technology stealing means you never fall behind on tech', 'Propagation generates infantry from combat losses', 'Extremely fun and unpredictable to play against'],
-    cons: ['Single home planet (3R/0I) — no influence', 'Cannot use diplomacy or trade normally', 'Valefar Assimilators require planning ahead', 'Steep learning curve — the faction handbook has 6 pages of exceptions'],
-    tip: 'Pick your early Assimilator targets carefully — copy high-value techs from Jol-Nar or Letnev. Use your two space docks to flood the board with units early and often.'
+    ability: 'GALACTIC THREAT: You cannot vote on agendas, but you may predict an outcome aloud — if correct, steal 1 technology from a player who voted that way. TECHNOLOGICAL SINGULARITY: When you destroy an opponent\'s unit in combat, you may steal 1 of their technologies. PROPAGATION: You cannot research technology normally — whenever you would, gain 3 command tokens instead.',
+    pros: ['Two space docks at start — huge production capacity', 'Technological Singularity turns combat wins into instant tech', 'Galactic Threat rewards reading the table during votes', 'Extremely unpredictable to play against'],
+    cons: ['Single home planet (4R/0I) — no influence at all', 'Cannot vote on agendas — no political leverage', 'Propagation means you never research tech the normal way', 'Steep learning curve — almost every interaction is an exception'],
+    tip: 'Pick fights specifically to trigger Technological Singularity against the most tech-advanced opponent. Remember Propagation converts what would be research into command tokens instead — plan your economy around tokens, not tech trees.'
   },
   'Embers of Muaat': {
     abbr: 'MUA', color: '#e8521a', difficulty: 3, pok: false,
     tagline: 'One trick: a War Sun. Build the most powerful unit in the game and use it to obliterate everything in its path.',
+    lore: 'Born on a dying, volcanic homeworld, the Muaat built their entire industrial culture around fire, forged metal, and a singular ambition: mastering the war sun, the most devastating weapon ever constructed. Other factions build fleets. The Muaat build apocalypses, one at a time, and then point them at whoever stands in their way.',
     homeworlds: ['Muaat (4R/1I)'],
-    startingTech: ['Magmus Reactor', 'Plasma Scoring'],
+    startingTech: ['Plasma Scoring'],
     commodities: 4,
-    ability: 'STAR FORGE: Once per round, produce 1 unit for free using your War Sun\'s production. UNSTABLE PLANET: Muaat can produce War Suns without extra cost. A War Sun can carry 6 fighters.',
-    pros: ['War Sun is the strongest combat unit in the game', 'High commodities (4) fund early development', 'Plasma Scoring adds hits before combat starts', 'Star Forge gives passive production income'],
+    ability: 'STAR FORGE: Spend 1 strategy pool token to place 2 fighters or 1 destroyer from reinforcements in a system containing your War Sun. GASHLAI PHYSIOLOGY: Your ships can move through supernovas as if they were empty space.',
+    pros: ['War Sun is the strongest combat unit in the game', 'High commodities (4) fund early development', 'Plasma Scoring adds free hits before combat starts', 'Gashlai Physiology opens movement routes other factions can\'t use'],
     cons: ['Everything depends on getting your War Sun operational', 'Single home planet is exposed', 'Slow to get started — War Sun takes time to build', 'A destroyed War Sun often loses the game'],
-    tip: 'Get your War Sun built before Round 3. Until then, play defensively. Once it\'s online, pick fights you can\'t lose. Plasma Scoring + War Sun shoots before anyone fires back.'
+    tip: 'Get your War Sun built before Round 3. Until then, play defensively. Once it\'s online, use Star Forge to reinforce it for free, and route through supernovas opponents think are impassable.'
   },
   'Ghosts of Creuss': {
     abbr: 'GHO', color: '#4a9eff', difficulty: 3, pok: false,
     tagline: 'Wormhole manipulators. Reshape the galaxy\'s geography. Strike from unexpected directions. Control movement itself.',
+    lore: 'Almost nothing is reliably known about the true nature of the Creuss — a species that seems to exist only partially within normal space, communicating through wormholes as readily as words. They are observed far more often than they are understood, appearing and vanishing across the galaxy\'s wormhole network in ways no other faction has ever fully mapped.',
     homeworlds: ['Creuss (4R/2I)'],
-    startingTech: ['Wormhole Generator'],
+    startingTech: ['Gravity Drive'],
     commodities: 4,
-    ability: 'QUANTUM ENTANGLEMENT: All wormholes in the galaxy are adjacent to each other — only for you. SLIPSTREAM: Move through wormholes even with enemy ships present. Create wormholes with tech.',
-    pros: ['Wormhole network creates unparalleled mobility', 'High commodities (4) and a strong homeworld', 'Strike from positions opponents can\'t predict', 'Wormhole Generator tech enables strategic wormhole placement'],
-    cons: ['Home system is isolated behind a wormhole — risky if taken', 'Requires deep map awareness to use effectively', 'Complex to play well — reading the board matters more than any other faction', 'Steepest learning curve for map control'],
-    tip: 'Place wormholes near Mecatol Rex and your planned expansion zones early. Your mobility is your army — don\'t let opponents cut off your wormhole access. Map awareness is everything.'
+    ability: 'QUANTUM ENTANGLEMENT: You treat all systems containing an alpha or beta wormhole as adjacent to each other. SLIPSTREAM: +1 move value for any of your ships that start movement in your home system or a wormhole system.',
+    pros: ['Wormhole network creates unparalleled mobility', 'High commodities (4) and a strong homeworld', 'Slipstream stacks with wormhole jumps for huge effective range', 'Strike from positions opponents can\'t predict'],
+    cons: ['Home system sits behind the Creuss Gate — risky if isolated', 'Requires deep map awareness to use effectively', 'Complex to play well — reading the board matters more than for most factions', 'Steepest learning curve for map control'],
+    tip: 'Treat every alpha/beta wormhole on the board as effectively adjacent to your home system. Slipstream means ships launching from a wormhole system move further than opponents expect — use that extra reach to strike where they aren\'t looking.'
   },
   'Arborec': {
     abbr: 'ARB', color: '#4ecb71', difficulty: 3, pok: false,
-    tagline: 'Biological production. Every infantry is a space dock. Slow to start, overwhelming in the late game.',
+    tagline: 'Biological production. A free infantry every single round, no resources spent. Slow to start, overwhelming in the late game.',
+    lore: 'The Arborec are less a civilization than a single distributed organism — a telepathic fungoid hivemind spread across the war-forests of their homeworld and beyond. They do not conquer so much as grow, planet by planet, patiently and irreversibly, until the question of removing them stops being a realistic option.',
     homeworlds: ['Nestphar (3R/2I)'],
     startingTech: ['Magen Defense Grid'],
     commodities: 3,
-    ability: 'MITOSIS: During Status Phase, each of your infantry produces 1 new infantry (where they stand). AWAKEN: Your Letani Warrior II infantry also function as space docks — produce anywhere.',
-    pros: ['Late-game production is unmatched', 'Mitosis makes your infantry self-replicating', 'Magen Defense Grid: PDS fire as if they were ships', 'Strong defensive game — planets with infantry are expensive to take'],
-    cons: ['Slowest start of any faction', 'Letani Warrior II requires tech before infantry produce', 'Combat stats are ordinary — you win through attrition', 'Vulnerable to early pressure before infantry multiply'],
-    tip: 'Spread infantry across planets in Round 1 — they need to be in place before Mitosis kicks in. Research Letani Warrior II fast. Don\'t fight; let opponents exhaust themselves while you grow.'
+    ability: 'MITOSIS: Your space docks cannot produce infantry. Instead, at the start of each Status Phase, place 1 infantry from your reinforcements on any planet you control.',
+    pros: ['Mitosis gives you free infantry every round, no production cost', 'Late-game army size compounds without spending resources', 'Magen Defense Grid: your PDS fire at ships during Space Cannon Offense', 'Strong defensive game — planets with infantry are expensive to take'],
+    cons: ['Slowest start of any faction — Mitosis takes rounds to compound', 'Cannot produce infantry from space docks at all', 'Combat stats are ordinary — you win through attrition and numbers', 'Vulnerable to early pressure before infantry build up'],
+    tip: 'Spread control across planets in Round 1 — Mitosis gives you 1 free infantry per Status Phase on any planet you control, so more controlled planets means faster compounding. Don\'t rush combat; let your numbers advantage build first.'
   },
   "Sardakk N'orr": {
     abbr: 'SAR', color: '#c4cedf', difficulty: 3, pok: false,
     tagline: "Hard mode. No racial abilities. No starting tech. Just +1 to every combat roll and sheer numbers.",
+    lore: 'An insectoid warrior race that prizes physical strength and martial honor above diplomacy, technology, or compromise, the N\'orr consider asking for help a form of weakness. They have no racial gifts, no political tricks, and no interest in either — only raw discipline, brute combat ability, and absolute confidence that it will be enough.',
     homeworlds: ["Quinarra (3R/1I)", "Tren'lak (1R/0I)"],
     startingTech: [],
     commodities: 3,
@@ -1698,25 +1745,27 @@ const FACTIONS = {
   },
   'Nomad': {
     abbr: 'NOM', color: '#d4a843', difficulty: 3, pok: true,
-    tagline: '(PoK) The Cavalry flagship is the best ship in the game. Copy objectives, score secrets easily, project power everywhere.',
-    homeworlds: ['Arcturus (2R/3I)'],
-    startingTech: ['Sling Relay', 'Predictive Intelligence'],
+    tagline: '(PoK) Triple agent value and steady Agenda Phase income. A flexible, opportunistic faction with no fixed homeworld to defend.',
+    lore: '(Prophecy of Kings) The remnants of a once-great dynasty, the Nomad faction now wanders the galaxy aboard the legendary flagship Memoria, seeking to rebuild lost glory through opportunism rather than conquest. They have no homeworld to defend and nothing left to lose — which makes them dangerously difficult to predict or pin down.',
+    homeworlds: ['Arcturus (4R/4I)'],
+    startingTech: ['Sling Relay'],
     commodities: 4,
-    ability: 'THE CAVALRY: Your flagship counts as a scoring unit for objectives — unique in the game. FUTURE SIGHT: Copy a scored public objective. Your promissory note lets an ally score early.',
-    pros: ['Flagship is an objective-scoring engine', 'Future Sight scoring is potentially 2 VP in one move', 'High commodities (4)', 'Sling Relay enables rapid reinforcement from home'],
-    cons: ['Single home planet with modest resources', 'Flagship is expensive to build and replace', 'Complex timing windows for scoring abilities', 'Requires PoK expansion'],
-    tip: 'Build The Cavalry as soon as possible. Use Future Sight to copy the most recently scored public objective — timing matters. Sling Relay lets you reinforce the front lines without burning command tokens.'
+    ability: 'THE COMPANY: You start with 3 faction agents instead of the usual 1, giving you more simultaneous agent abilities active at once. FUTURE SIGHT: During the Agenda Phase, after an outcome you voted for or predicted resolves, gain 1 trade good.',
+    pros: ['Strong single homeworld (4R/4I)', 'The Company means 3x the usual agent value', 'Future Sight turns smart voting into steady trade good income', 'High commodities (4)'],
+    cons: ['Single home planet — no redundancy if attacked', 'Agent-based value requires knowing PoK leader mechanics well', 'Complex timing windows for scoring abilities', 'Requires PoK expansion'],
+    tip: 'Lean on The Company\'s extra agents for tempo plays other factions can\'t match. Vote with the table\'s likely outcome when you can to farm Future Sight\'s trade goods reliably.'
   },
   'Mahact Gene-Sorcerers': {
     abbr: 'MAH', color: '#d4a843', difficulty: 3, pok: true,
     tagline: '(PoK) Steal command tokens from defeated enemies to fuel the largest fleet in the galaxy. The most powerful — and complex — faction.',
+    lore: '(Prophecy of Kings) The Mahact once ruled through terrifyingly precise genetic engineering, bioengineering control directly into the bodies and minds of subject species. Their empire eventually fell, but their mastery of genetic manipulation — and their appetite for ruling again — survived entirely intact.',
     homeworlds: ['Ixth (3R/5I)'],
     startingTech: ['Bio-Stims', 'Predictive Intelligence'],
     commodities: 3,
-    ability: 'IMPERIA: For each unique command token on your flagship, your fleet limit increases by 1. HUBRIS: Steal command tokens when you destroy enemy flagships. Edict limits opponent command token use.',
-    pros: ['5 influence on Ixth = enormous voting power', 'Fleet limit can grow indefinitely with stolen CCs', 'Bio-Stims gives leaders a recovery ability', 'Unique flagship abilities (Edict, Imperia) are game-defining'],
-    cons: ['Complex — requires tracking multiple opponent command token pools', 'Aggressive play necessary to generate stolen CCs', 'Heavily targeted because of their power level', 'Requires PoK expansion'],
-    tip: 'Target flagships specifically — each destroyed flagship gives you a command token of their color. Imperia means your fleet cap grows with each kill. A late-game Mahact fleet is unstoppable.'
+    ability: 'EDICT: When you win a combat, place 1 command token from your opponent\'s reinforcements into your fleet pool — it raises your fleet limit but can\'t be redistributed. IMPERIA: While an opponent\'s command token sits in your fleet pool, you may use that player\'s unlocked commander ability. HUBRIS: You purge your Alliance promissory note during setup, and no one can give you theirs.',
+    pros: ['5 influence on Ixth = enormous voting power', 'Edict turns combat wins into a permanently bigger fleet', 'Imperia can grant access to powerful enemy commander abilities', 'Bio-Stims gives leaders a recovery ability'],
+    cons: ['Complex — requires tracking which opponents\' tokens sit in your fleet pool', 'Aggressive play necessary to trigger Edict', 'Heavily targeted because of their power level', 'Requires PoK expansion'],
+    tip: 'Win combats deliberately to grow your fleet pool via Edict — every captured token is permanent. Watch which commanders you unlock access to through Imperia; a strong enemy commander ability can reshape your whole game plan.'
   },
 };
 
@@ -1725,7 +1774,6 @@ const TECH_TIPS = {
   'Antimass Deflectors': '+1 movement for all your ships.\nReach distant systems faster and respond to threats across the galaxy.',
   'Sarween Tools': 'When producing units, 1 unit costs nothing extra (reduces total cost by 1).\nA permanent production discount applied to every build order.',
   'Quantum Datahub Node': 'Share your entire Action Card hand with a trade partner once per trade.\nEnables deep diplomatic agreements — give allies the card they need.',
-  'Spec Ops II': 'Your infantry roll 2 combat dice and keep the better result in ground combat.\nDramatically improves planetary invasions.',
   'Non-Euclidean Shielding': 'Your flagship and dreadnoughts gain Sustain Damage.\nAbsorb a hit without being destroyed — each ship can take 2 hits before dying.',
   'Chaos Mapping': 'Your ships ignore asteroid fields. Your home system gains a wormhole,\nconnecting you to the wormhole network anywhere on the map.',
   'Neuroglaive': 'Enemies adjacent to your systems cannot use Sustain Damage.\nRemoves the most powerful defensive ability in the game.',
@@ -1736,12 +1784,12 @@ const TECH_TIPS = {
   'Valefar Assimilator X': 'Nekro exclusive: when an enemy faction\'s units are destroyed, copy one of their technologies.\nSteal racial techs your opponents spent rounds researching.',
   'Valefar Assimilator Y': 'Nekro exclusive: second technology copy slot.\nLets you simultaneously hold 2 technologies stolen from other factions.',
   'Magmus Reactor': 'Unlocks War Sun production. Without this technology, War Suns\ncannot be built — it\'s the gate to the most powerful unit in the game.',
-  'Plasma Scoring': 'Before space combat begins, your ships deal 1 automatic hit.\nThe opponent cannot return fire against it — free damage every fight.',
+  'Plasma Scoring': 'Adds bonus damage when your units use Bombardment or Space Cannon abilities.\nMakes pre-combat and invasion softening hit noticeably harder.',
   'Wormhole Generator': 'Place or move an alpha or beta wormhole token on the map.\nReshape the galaxy\'s movement network to benefit your ships.',
   'Magen Defense Grid': 'Your PDS units fire at enemy ships during Space Cannon Offense.\nTreated like combat ships — extra long-range firepower.',
   'Sling Relay': 'Once per action, produce units at a space dock adjacent to an activated system.\nExtend your production range far from your home system.',
   'Bio-Stims': 'Exhaust to ready an exhausted card (planet, agent, etc.).\nAccelerates recovery and can double certain leader abilities.',
-  '(pick any 1 tech no other faction starts with)': 'Winnu special: choose any starting technology not held by another faction.\nPick something that complements your path to Mecatol Rex.',
+  '(choose any 1 technology with no prerequisites)': 'Winnu special: pick any technology that has no prerequisite icons.\nPick something that complements your path to Mecatol Rex.',
 };
 
 const FACTION_GROUPS = [
@@ -1847,6 +1895,23 @@ function renderFactionDetail(key, container) {
     </div>
 
     <div id="fs-faction-tagline">${escapeHtml(f.tagline)}</div>
+
+    ${f.lore ? `
+    <div>
+      <div class="fs-section-title">Backstory</div>
+      <div class="fs-lore-box">
+        <div class="fs-lore-text">${escapeHtml(f.lore)}</div>
+        <div class="fs-lore-fade"></div>
+      </div>
+      <button class="fs-lore-toggle" onclick="
+        const box = this.previousElementSibling;
+        const txt = box.querySelector('.fs-lore-text');
+        const fade = box.querySelector('.fs-lore-fade');
+        const expanded = txt.classList.toggle('expanded');
+        fade.classList.toggle('hidden', expanded);
+        this.textContent = expanded ? '▲ Show less' : '▼ Read more';
+      ">▼ Read more</button>
+    </div>` : ''}
 
     <div>
       <div class="fs-section-title" style="display:flex;align-items:center">
