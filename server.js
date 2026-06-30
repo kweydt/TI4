@@ -25,12 +25,12 @@ const FACTIONS = {
   },
   'Emirates of Hacan': {
     description: 'Masters of trade and negotiation. Economic dominance through commodities, backroom deals, and controlling the flow of resources across the galaxy.',
-    homeworlds: 'Arretze (2R/0I), Kamdorn (0R/1I), Hercant (1R/1I)',
+    homeworlds: 'Arretze (2R/1I), Kamdorn (0R/1I), Hercant (1R/1I)',
     startingTech: ['Antimass Deflectors', 'Sarween Tools'],
     commodities: 6,
     keyAbility: 'MASTERS OF TRADE: No command token cost to resolve the Trade strategy card secondary. GUILD SHIPS: Negotiate transactions even with non-neighbors. ARBITERS: Action cards can be exchanged in a transaction.',
     planets: [
-      { name: 'Arretze', resources: 2, influence: 0, ready: true, trait: 'Industrial' },
+      { name: 'Arretze', resources: 2, influence: 1, ready: true, trait: 'Industrial' },
       { name: 'Kamdorn', resources: 0, influence: 1, ready: true, trait: 'Cultural' },
       { name: 'Hercant', resources: 1, influence: 1, ready: true, trait: 'Hazardous' }
     ],
@@ -41,7 +41,7 @@ const FACTIONS = {
     homeworlds: 'Jol (1R/2I), Nar (2R/3I)',
     startingTech: ['Neural Motivator', 'Antimass Deflectors', 'Sarween Tools', 'Plasma Scoring'],
     commodities: 4,
-    keyAbility: 'FRAGILE: -1 to the result of each of your unit\'s combat rolls. ANALYTICAL: When researching a non-unit-upgrade technology, you may ignore 1 prerequisite icon on it.',
+    keyAbility: 'FRAGILE: -1 to the result of each of your unit\'s combat rolls. BRILLIANT: When you spend a command token to resolve the Technology strategy card\'s secondary, you may resolve the primary instead. ANALYTICAL: When researching a non-unit-upgrade technology, you may ignore 1 prerequisite.',
     planets: [
       { name: 'Jol', resources: 1, influence: 2, ready: true, trait: 'Industrial' },
       { name: 'Nar', resources: 2, influence: 3, ready: true, trait: 'Industrial' }
@@ -50,13 +50,12 @@ const FACTIONS = {
   },
   'L1Z1X Mindnet': {
     description: 'Pure military aggression. Upgraded Dreadnoughts, Assault Cannons, and a Flagship that instills dread. Expand fast, threaten everyone, control the board through fear.',
-    homeworlds: '[0.0.0] (5R/0I), Wellon (0R/2I)',
-    startingTech: ['Neural Motivator', 'Antimass Deflectors'],
+    homeworlds: '[0.0.0] (5R/0I)',
+    startingTech: ['Neural Motivator', 'Plasma Scoring'],
     commodities: 2,
     keyAbility: 'ASSIMILATE: When you gain control of a planet, replace any PDS or space dock there with your own. HARROW: After each round of ground combat, your ships in the system may use Bombardment against the survivors.',
     planets: [
-      { name: '[0.0.0]', resources: 5, influence: 0, ready: true, trait: 'Industrial' },
-      { name: 'Wellon', resources: 0, influence: 2, ready: true, trait: 'Cultural' }
+      { name: '[0.0.0]', resources: 5, influence: 0, ready: true, trait: 'Industrial' }
     ],
     units: { carriers: 2, destroyers: 1, fighters: 3, infantry: 5, pds: 1, spaceDocks: 1, cruisers: 0, dreadnoughts: 0, flagships: 0, warsuns: 0 }
   },
@@ -225,7 +224,7 @@ const FACTIONS = {
 const OPPONENT_POOL = [
   { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Antimass Deflectors', 'Sarween Tools'], tradeGoods: 3, attitude: 'neutral' },
   { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral' },
-  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], planets: ['[0.0.0]', 'Wellon'],            unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Antimass Deflectors'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], planets: ['[0.0.0]'],                     unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral' },
   { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Plasma Scoring'], tradeGoods: 2, attitude: 'neutral' },
   { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], planets: ['Archon Ren', 'Archon Tau'],     unitSummary: 'Standard Xxcha opening', technologies: ['Graviton Laser System'], tradeGoods: 0, attitude: 'neutral' },
 ];
