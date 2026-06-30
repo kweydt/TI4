@@ -2066,7 +2066,7 @@ function startGame(factionName) {
   streaming = false;
   phasesSeen = new Set();
 
-  const openingMessage = `Begin the game. I am playing as the ${factionName}. Set the scene for Round 1, explain the Strategy Phase, and present the 8 strategy cards so I can pick — coaching me on which one fits my faction this round.`;
+  const openingMessage = `Begin the game. I am playing as the ${factionName}. Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
   sendTurn(openingMessage);
 }
 
