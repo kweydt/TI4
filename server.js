@@ -450,7 +450,7 @@ app.post('/api/turn', async (req, res) => {
     return res.status(400).json({ error: 'history array required' });
   }
 
-  const gameState = state || buildInitialState('Federation of Sol');
+  const gameState = (state && state.player) ? state : buildInitialState((state && state.faction) || 'Federation of Sol');
   const trimmedHistory = history.slice(-40);
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
