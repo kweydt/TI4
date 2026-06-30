@@ -802,6 +802,16 @@
   #faction-modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   /* Input Bar */
+  #stream-status { flex-shrink: 0; height: 0; overflow: hidden; transition: height 0.15s ease; background: var(--panel); border-top: 1px solid transparent; }
+  #stream-status.active { height: 34px; border-top-color: var(--border); }
+  #stream-status-inner { display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 34px; }
+  #stream-status-icon { font-size: 13px; }
+  #stream-status-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--dim); flex: 1; }
+  #stream-status-label span { color: var(--text); }
+  .stream-pip { display: inline-flex; gap: 3px; align-items: center; margin-left: 4px; }
+  .stream-pip i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; display: inline-block; animation: pulse 1.1s infinite; }
+  .stream-pip i:nth-child(2) { animation-delay: 0.18s; }
+  .stream-pip i:nth-child(3) { animation-delay: 0.36s; }
   #input-bar { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; padding: 10px 16px; padding-bottom: calc(10px + var(--safe-bottom)); background: var(--panel); border-top: 1px solid var(--border); }
   #input-area { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--font-body); font-size: 14px; line-height: 1.5; resize: none; min-height: 44px; max-height: 120px; outline: none; -webkit-appearance: none; }
   #input-area:focus { border-color: rgba(74,158,255,0.5); }
@@ -1340,6 +1350,7 @@
     <div id="rules-answer"><p style="color:var(--dim);font-style:italic">Ask a question above to get an instant rules reference. This doesn't affect your game.</p></div>
   </div>
 
+  <div id="stream-status"><div id="stream-status-inner"><span id="stream-status-icon">⬡</span><span id="stream-status-label">Thinking<span class="stream-pip"><i></i><i></i><i></i></span></span></div></div>
   <div id="input-bar">
     <textarea id="input-area" placeholder="Type your action or question…" rows="1"></textarea>
     <button id="rules-btn" title="Look up a TI4 rule">?</button>
@@ -3096,12 +3107,42 @@ document.addEventListener('keydown', e => {
 });
 
 
+const STREAM_PHASES = [
+  { tag: /\[OPPONENTS\]/,  icon: '⬟', label: 'Opponents are deciding' },
+  { tag: /\[COACH\]/,      icon: '◈', label: 'Your coach is thinking' },
+  { tag: /\[CHOICES\]/,    icon: '◎', label: 'Preparing your options' },
+  { tag: /\[DEBRIEF\]/,    icon: '◎', label: 'Writing round debrief' },
+  { tag: /\[GM\]/,         icon: '⬡', label: 'Game Master is narrating' },
+];
+
+function setStreamStatus(icon, label) {
+  const bar = el('stream-status');
+  const lbl = el('stream-status-label');
+  const ico = el('stream-status-icon');
+  bar.classList.add('active');
+  ico.textContent = icon;
+  lbl.innerHTML = `<span>${label}</span><span class="stream-pip"><i></i><i></i><i></i></span>`;
+}
+
+function hideStreamStatus() {
+  el('stream-status').classList.remove('active');
+}
+
 function startStreamEntry() {
   streamingEntry = addEntry('gm', 'GAME MASTER', '⬡', '<div class="dots"><span></span><span></span><span></span></div>');
+  setStreamStatus('⬡', 'Game Master is narrating');
 }
 
 function updateStreamEntry(text) {
   if (!streamingEntry) return;
+
+  // Detect which section is currently being written (last tag seen)
+  let currentIcon = '⬡', currentLabel = 'Game Master is narrating';
+  for (const phase of STREAM_PHASES) {
+    if (phase.tag.test(text)) { currentIcon = phase.icon; currentLabel = phase.label; }
+  }
+  setStreamStatus(currentIcon, currentLabel);
+
   const gmMatch = text.match(/\[GM\]([\s\S]*?)(?=\[COACH\]|\[OPPONENTS\]|\[CHOICES\]|<!--STATE|$)/);
   const display = gmMatch ? gmMatch[1] : text.replace(/\[GM\]|\[COACH\]|\[OPPONENTS\]|\[CHOICES\]/g, '');
   const clean = display.replace(/<!--STATE:[\s\S]*?-->/g, '').trim();
@@ -3115,6 +3156,7 @@ function updateStreamEntry(text) {
 }
 
 function finalizeStream(fullText) {
+  hideStreamStatus();
   if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
   const stateMatch = fullText.match(/<!--STATE:([\s\S]*?)-->/);
   if (stateMatch) {
@@ -3200,6 +3242,7 @@ async function sendTurn(text) {
       if (history[0]?.role === 'assistant') history = history.slice(1);
     }
   } catch (err) {
+    hideStreamStatus();
     if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
     addEntry('gm', 'ERROR', '⚠', `<p style="color:var(--orange)">${escapeHtml(err.message)}</p>`);
   }
