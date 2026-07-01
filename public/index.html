@@ -2471,11 +2471,13 @@ function enterGame() {
   el('map-loading-screen').classList.add('hidden');
   el('game-screen').classList.remove('hidden');
 
-  el('faction-badge').innerHTML = escapeHtml(factionName.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
-  el('sheet-title').textContent = `⬡ ${f.handle || 'Commander'} — ${factionName}`;
-  el('hex-player-label').textContent = f.abbr;
-  el('log').innerHTML = '';
-  el('coach-body').innerHTML = '<div id="coach-empty">Awaiting your first decision…</div>';
+  try {
+    if (el('faction-badge')) el('faction-badge').innerHTML = escapeHtml(factionName.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
+    if (el('sheet-title')) el('sheet-title').textContent = `⬡ ${f.handle || 'Commander'} — ${factionName}`;
+    if (el('hex-player-label')) el('hex-player-label').textContent = f.abbr;
+    if (el('log')) el('log').innerHTML = '';
+    if (el('coach-body')) el('coach-body').innerHTML = '<div id="coach-empty">Awaiting your first decision…</div>';
+  } catch(e) { console.warn('enterGame UI update failed:', e); }
 
   const totalPlayers = opponentCount + 1;
   const openingMessage = `Begin the game. I am playing as the ${factionName} in a ${totalPlayers}-player game (${opponentCount} opponents). Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
