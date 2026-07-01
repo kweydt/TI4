@@ -640,9 +640,10 @@ Rules:
       messages: [{ role: 'user', content: prompt }]
     });
     const text = msg.content[0].text.trim();
-    // Strip any accidental markdown code fences
-    const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-    const board = JSON.parse(clean);
+    // Extract the JSON array from anywhere in the response (handles preamble/fences)
+    const arrayMatch = text.match(/\[[\s\S]*\]/);
+    if (!arrayMatch) throw new Error('No JSON array found in board response');
+    const board = JSON.parse(arrayMatch[0]);
     res.json({ board });
   } catch (err) {
     console.error('Board generation error:', err);
