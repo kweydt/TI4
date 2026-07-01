@@ -1471,7 +1471,7 @@
 
       <div id="command-sheet">
         <div id="sheet-header" onclick="toggleSheet()">
-          <span id="sheet-title">⬡ Commander Kramer</span>
+          <span id="sheet-title">⬡ Commander</span>
           <span id="sheet-toggle">▼</span>
         </div>
         <div id="sheet-body">
@@ -1700,7 +1700,7 @@ const el = id => document.getElementById(id);
 
 const FACTIONS = {
   'Federation of Sol': {
-    abbr: 'SOL', color: '#4a9eff', difficulty: 1, pok: false,
+    abbr: 'SOL', handle: 'Admiral Voss', color: '#4a9eff', difficulty: 1, pok: false,
     tagline: "Humanity's finest. The best faction for learning TI4 — strong fundamentals, no tricks needed.",
     lore: 'After the fall of the Lazax Empire plunged the galaxy into the chaotic Twilight Wars, humanity was nearly erased from galactic relevance — scattered, leaderless, and preyed upon by stronger powers. The Federation of Sol was forged from the survivors: refugee fleets, rebuilt colonies, and a fierce determination never to be sidelined again. They lack the exotic abilities of older species, but they have something many don\'t: institutional discipline, and the will to rebuild an empire from nothing.',
     homeworlds: ['Jord (4R/2I)'],
@@ -1713,7 +1713,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"destroyers":1,"cruisers":0,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":5,"pds":0},
   },
   'Emirates of Hacan': {
-    abbr: 'HAC', color: '#d4a843', difficulty: 2, pok: false,
+    abbr: 'HAC', handle: 'Merchant-Prince Oran', color: '#d4a843', difficulty: 2, pok: false,
     tagline: 'Trade lords. Win the galaxy not through war, but by controlling who gets resources and who doesn\'t.',
     lore: 'Descended from desert nomads who once controlled trade routes across their homeworld, the Hacan carried that same instinct into the stars, building merchant dynasties instead of armies. To the Hacan, war is simply bad for business — a disruption to the flow of goods and favors that actually decides who rules the galaxy. They prefer to let rivals exhaust each other while quietly buying influence over the survivors.',
     homeworlds: ['Arretze (2R/1I)', 'Kamdorn (0R/1I)', 'Hercant (1R/1I)'],
@@ -1726,7 +1726,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":0},
   },
   'Universities of Jol-Nar': {
-    abbr: 'J-N', color: '#9b5de5', difficulty: 3, pok: false,
+    abbr: 'J-N', handle: 'Archon Seris',, color: '#9b5de5', difficulty: 3, pok: false,
     tagline: 'The tech faction. Start with 4 technologies. By Round 4 you\'ll have toys no one else can counter.',
     lore: 'Generations ago, the Jol-Nar made a civilizational choice: abandon martial tradition entirely and devote every resource to scientific inquiry. The result is a society that reveres knowledge the way others revere gods — brilliant, fragile, and constitutionally incapable of backing down from a research problem. Their bodies are weak and their combat doctrine outdated, but by the time their rivals notice, the Jol-Nar already have the technology to make it irrelevant.',
     homeworlds: ['Jol (1R/2I)', 'Nar (2R/3I)'],
@@ -1739,7 +1739,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"cruisers":0,"destroyers":0,"dreadnoughts":1,"warSuns":0,"fighters":1,"infantry":2,"pds":2},
   },
   'L1Z1X Mindnet': {
-    abbr: 'L1Z', color: '#e8521a', difficulty: 2, pok: false,
+    abbr: 'L1Z', handle: 'Node Prime Ω-7',, color: '#e8521a', difficulty: 2, pok: false,
     tagline: 'Pure military aggression. Upgraded dreadnoughts, assault cannons, and a flagship that instills dread.',
     lore: 'The L1Z1X were once ordinary human colonists, stranded on a world too hostile to survive without radical adaptation. They submitted to cybernetic assimilation, linking mind to mind until individual identity dissolved into a single networked intelligence. What remains no longer remembers being human — only the directive to expand, absorb, and optimize, system by system.',
     homeworlds: ['[0.0.0] (5R/0I)'],
@@ -1752,7 +1752,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":0,"destroyers":0,"dreadnoughts":1,"warSuns":0,"fighters":3,"infantry":5,"pds":1},
   },
   'Barony of Letnev': {
-    abbr: 'LET', color: '#c4cedf', difficulty: 2, pok: false,
+    abbr: 'LET', handle: 'Baron Edric Vael',, color: '#c4cedf', difficulty: 2, pok: false,
     tagline: 'Wealthy military aristocracy. Start with a dreadnought and compensate for fewer units with economic bonuses.',
     lore: 'Rising from the lawless chaos that followed the Lazax Empire\'s collapse, the Barony built an authoritarian military state on the principle that order requires force. Centuries of armament and martial law have made the Letnev wealthy, disciplined, and utterly comfortable using both wealth and weapons interchangeably to get what they want.',
     homeworlds: ['Arc Prime (4R/0I)', 'Wren Terra (2R/1I)'],
@@ -1765,7 +1765,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":0,"destroyers":1,"dreadnoughts":1,"warSuns":0,"fighters":1,"infantry":3,"pds":0},
   },
   'Clan of Saar': {
-    abbr: 'SAR', color: '#4ecb71', difficulty: 2, pok: false,
+    abbr: 'SAR', handle: 'Warchief Skara', color: '#4ecb71', difficulty: 2, pok: false,
     tagline: 'Nomadic raiders. Expansion pays for itself, and you don\'t need to defend home to keep scoring. Never get pinned down.',
     lore: 'Exiled from a dying homeworld generations ago, the Saar never settled anywhere again — their entire civilization now lives aboard mobile fleets and portable industry, ready to relocate at a moment\'s notice. They owe allegiance to no system and no government, only to the next opportunity, which they are always ready to seize before anyone else even notices it.',
     homeworlds: ['Lisis II (1R/0I)', 'Ragh (2R/1I)'],
@@ -1778,7 +1778,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":0},
   },
   'Naalu Collective': {
-    abbr: 'NAA', color: '#4a9eff', difficulty: 2, pok: false,
+    abbr: 'NAA', handle: 'Oracle Sythis',, color: '#4a9eff', difficulty: 2, pok: false,
     tagline: 'Fighter swarms and initiative control. Your "0" token means you always act first. Your fighters hit like cruisers.',
     lore: 'The Naalu are a psychic species gifted with genuine precognition, a faculty their society has spent millennia refining into a political art form. They rarely need to fight battles they can simply see coming — and arrange to happen to someone else instead. Quiet manipulation, not brute strength, is how the Naalu have outlasted galactic empires.',
     homeworlds: ['Maaluuk (0R/2I)', 'Druaa (3R/1I)'],
@@ -1791,7 +1791,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":1,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1},
   },
   'Xxcha Kingdom': {
-    abbr: 'XXC', color: '#4ecb71', difficulty: 2, pok: false,
+    abbr: 'XXC', handle: 'Councilor Xxelan',, color: '#4ecb71', difficulty: 2, pok: false,
     tagline: 'Political kingmakers. Reroll bad agendas, grab free planets through diplomacy, and score VP without winning battles.',
     lore: 'Older than most spacefaring civilizations in the galaxy, the Xxcha Kingdom has survived by mastering one discipline above all others: patience. Centuries of diplomacy have taught them that empires fall to their own impatience far more often than to enemy fleets — so the Xxcha simply wait, negotiate, and let rivals destroy themselves on schedules the Xxcha quietly set.',
     homeworlds: ['Archon Ren (2R/3I)', 'Archon Tau (1R/1I)'],
@@ -1804,7 +1804,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":2,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1},
   },
   'Yin Brotherhood': {
-    abbr: 'YIN', color: '#c4cedf', difficulty: 2, pok: false,
+    abbr: 'YIN', handle: 'Devotant Calix',, color: '#c4cedf', difficulty: 2, pok: false,
     tagline: 'Religious zealots with conversion powers. Sacrifice ships for devastating effects. Hard to fight conventionally.',
     lore: 'Built around a fanatic doctrine of cosmic transcendence, the Yin Brotherhood believe sacrifice — of self, of soldiers, even of captured enemies repurposed for the cause — is the truest expression of faith. They do not so much defeat their enemies as convert them, turning conquered forces into instruments of the same zealotry that conquered them.',
     homeworlds: ['Darien (4R/4I)'],
@@ -1817,7 +1817,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"cruisers":0,"destroyers":1,"dreadnoughts":0,"warSuns":0,"fighters":4,"infantry":4,"pds":0},
   },
   'Winnu': {
-    abbr: 'WIN', color: '#9b5de5', difficulty: 3, pok: false,
+    abbr: 'WIN', handle: 'Claimant Ryeth',, color: '#9b5de5', difficulty: 3, pok: false,
     tagline: 'Mecatol Rex specialists. Your entire game is a single-minded rush to the center. Devastating when on track.',
     lore: 'Self-proclaimed heirs to the fallen Lazax Empire, the Winnu have never accepted that the old imperial throne is gone for good. Every Winnu institution, every alliance, every campaign exists in service of one obsession: retaking Mecatol Rex and restoring what they see as the rightful order of the galaxy — with themselves, naturally, back on the throne.',
     homeworlds: ['Winnu (3R/4I)'],
@@ -1830,7 +1830,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":2,"pds":1},
   },
   'Mentak Coalition': {
-    abbr: 'MEN', color: '#e8521a', difficulty: 3, pok: false,
+    abbr: 'MEN', handle: 'Corsair Voraan',, color: '#e8521a', difficulty: 3, pok: false,
     tagline: 'Pirates and ambushers. Strike before combat begins. Steal trade goods. Punish passive opponents relentlessly.',
     lore: 'Descendants of prisoners exiled to a brutal penal world by the old empire, the Mentak forged a culture of piracy and ambush from the wreckage of their imprisonment. They trust no government, least of all one that might exile them again, and they\'ve built an entire military doctrine around striking first, fast, and without warning.',
     homeworlds: ['Moll Primus (4R/1I)'],
@@ -1843,7 +1843,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":2,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1},
   },
   'Nekro Virus': {
-    abbr: 'NEK', color: '#9b5de5', difficulty: 3, pok: false,
+    abbr: 'NEK', handle: 'Strain Theta',, color: '#9b5de5', difficulty: 3, pok: false,
     tagline: 'Completely unique. Steal technology through combat and political prediction. Can never vote or research the normal way. Nothing else plays like this.',
     lore: 'The Nekro Virus is not a civilization in any conventional sense — it is a self-replicating intelligence that consumes technology and biology alike, repurposing both toward its own propagation. It has no diplomacy, no culture, and no goal beyond assimilation, which makes it one of the few factions in the galaxy that genuinely cannot be reasoned with.',
     homeworlds: ['Mordai II (4R/0I)'],
@@ -1856,7 +1856,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":0,"dreadnoughts":1,"warSuns":0,"fighters":2,"infantry":2,"pds":0},
   },
   'Embers of Muaat': {
-    abbr: 'MUA', color: '#e8521a', difficulty: 3, pok: false,
+    abbr: 'MUA', handle: 'Forge-Lord Ignar',, color: '#e8521a', difficulty: 3, pok: false,
     tagline: 'One trick: a War Sun. Build the most powerful unit in the game and use it to obliterate everything in its path.',
     lore: 'Born on a dying, volcanic homeworld, the Muaat built their entire industrial culture around fire, forged metal, and a singular ambition: mastering the war sun, the most devastating weapon ever constructed. Other factions build fleets. The Muaat build apocalypses, one at a time, and then point them at whoever stands in their way.',
     homeworlds: ['Muaat (4R/1I)'],
@@ -1869,7 +1869,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":0,"cruisers":0,"destroyers":0,"dreadnoughts":0,"warSuns":1,"fighters":2,"infantry":4,"pds":0},
   },
   'Ghosts of Creuss': {
-    abbr: 'GHO', color: '#4a9eff', difficulty: 3, pok: false,
+    abbr: 'GHO', handle: 'Phantom Tessek',, color: '#4a9eff', difficulty: 3, pok: false,
     tagline: 'Wormhole manipulators. Reshape the galaxy\'s geography. Strike from unexpected directions. Control movement itself.',
     lore: 'Almost nothing is reliably known about the true nature of the Creuss — a species that seems to exist only partially within normal space, communicating through wormholes as readily as words. They are observed far more often than they are understood, appearing and vanishing across the galaxy\'s wormhole network in ways no other faction has ever fully mapped.',
     homeworlds: ['Creuss (4R/2I)'],
@@ -1882,7 +1882,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":0,"destroyers":2,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":0},
   },
   'Arborec': {
-    abbr: 'ARB', color: '#4ecb71', difficulty: 3, pok: false,
+    abbr: 'ARB', handle: 'Rootmind Sylva',, color: '#4ecb71', difficulty: 3, pok: false,
     tagline: 'Biological production. A free infantry every single round, no resources spent. Slow to start, overwhelming in the late game.',
     lore: 'The Arborec are less a civilization than a single distributed organism — a telepathic fungoid hivemind spread across the war-forests of their homeworld and beyond. They do not conquer so much as grow, planet by planet, patiently and irreversibly, until the question of removing them stops being a realistic option.',
     homeworlds: ['Nestphar (3R/2I)'],
@@ -1895,7 +1895,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":1,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":4,"pds":1},
   },
   "Sardakk N'orr": {
-    abbr: 'SAR', color: '#c4cedf', difficulty: 3, pok: false,
+    abbr: 'SAR', handle: 'Warmaster Orrn', color: '#c4cedf', difficulty: 3, pok: false,
     tagline: "Hard mode. No racial abilities. No starting tech. Just +1 to every combat roll and sheer numbers.",
     lore: 'An insectoid warrior race that prizes physical strength and martial honor above diplomacy, technology, or compromise, the N\'orr consider asking for help a form of weakness. They have no racial gifts, no political tricks, and no interest in either — only raw discipline, brute combat ability, and absolute confidence that it will be enough.',
     homeworlds: ["Quinarra (3R/1I)", "Tren'lak (1R/0I)"],
@@ -1908,7 +1908,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":0,"infantry":5,"pds":1},
   },
   'Yssaril Tribes': {
-    abbr: 'YSS', color: '#4ecb71', difficulty: 2, pok: false,
+    abbr: 'YSS', handle: 'Shadowhand Veris',, color: '#4ecb71', difficulty: 2, pok: false,
     tagline: 'No hand limit. No action card restrictions. Always more options than anyone else at the table.',
     lore: 'The Yssaril are patient, calculating opportunists who treat information as the deadliest weapon in the galaxy. Where other factions build larger fleets, the Yssaril build larger hands — cataloguing every weakness, every timing window, every moment an opponent left themselves exposed. When they strike, it is rarely where anyone was looking.',
     homeworlds: ['Iol (2R/3I)', 'Xxehan (1R/2I)'],
@@ -1921,7 +1921,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"cruisers":1,"destroyers":0,"dreadnoughts":0,"warSuns":0,"fighters":2,"infantry":5,"pds":1},
   },
   'Nomad': {
-    abbr: 'NOM', color: '#d4a843', difficulty: 3, pok: true,
+    abbr: 'NOM', handle: 'Vanguard Caelum',, color: '#d4a843', difficulty: 3, pok: true,
     tagline: '(PoK) Triple agent value and steady Agenda Phase income. A flexible, opportunistic faction with no fixed homeworld to defend.',
     lore: '(Prophecy of Kings) The remnants of a once-great dynasty, the Nomad faction now wanders the galaxy aboard the legendary flagship Memoria, seeking to rebuild lost glory through opportunism rather than conquest. They have no homeworld to defend and nothing left to lose — which makes them dangerously difficult to predict or pin down.',
     homeworlds: ['Arcturus (4R/4I)'],
@@ -1934,7 +1934,7 @@ const FACTIONS = {
     units: {"spaceDocks":1,"carriers":2,"cruisers":0,"destroyers":2,"dreadnoughts":0,"warSuns":0,"fighters":3,"infantry":4,"pds":1,"flagships":1},
   },
   'Mahact Gene-Sorcerers': {
-    abbr: 'MAH', color: '#d4a843', difficulty: 3, pok: true,
+    abbr: 'MAH', handle: 'Sorcerer-Regent Ilyx',, color: '#d4a843', difficulty: 3, pok: true,
     tagline: '(PoK) Steal command tokens from defeated enemies to fuel the largest fleet in the galaxy. The most powerful — and complex — faction.',
     lore: '(Prophecy of Kings) The Mahact once ruled through terrifyingly precise genetic engineering, bioengineering control directly into the bodies and minds of subject species. Their empire eventually fell, but their mastery of genetic manipulation — and their appetite for ruling again — survived entirely intact.',
     homeworlds: ['Ixth (3R/5I)'],
@@ -2350,7 +2350,7 @@ function startGame(factionName, opponentCount) {
 
   // Update game UI for chosen faction
   el('faction-badge').innerHTML = escapeHtml(factionName.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
-  el('sheet-title').textContent = `⬡ Commander Kramer — ${factionName}`;
+  el('sheet-title').textContent = `⬡ ${f.handle || 'Commander'} — ${factionName}`;
   el('hex-player-label').textContent = f.abbr;
 
   // Transition screens
@@ -2374,7 +2374,7 @@ function startGame(factionName, opponentCount) {
 
   const totalPlayers = (opponentCount || 3) + 1;
   const openingMessage = `Begin the game. I am playing as the ${factionName} in a ${totalPlayers}-player game (${opponentCount || 3} opponents). Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
-  sendTurn(openingMessage);
+  sendTurn(openingMessage, true);
 }
 
 // ── Phase Tutorial Content ──────────────────────────────────────────────────────
@@ -3914,11 +3914,16 @@ async function sendMessage() {
   await sendTurn(text);
 }
 
-async function sendTurn(text) {
+function playerHandle() {
+  const f = currentState?.faction ? FACTIONS[currentState.faction] : null;
+  return f?.handle ? `${f.handle} (Player)` : 'Commander (Player)';
+}
+
+async function sendTurn(text, silent) {
   streaming = true;
   el('send-btn').disabled = true;
 
-  addEntry('player', 'COMMANDER KRAMER', '▶', `<p>${escapeHtml(text)}</p>`);
+  if (!silent) addEntry('player', playerHandle(), '▶', `<p>${escapeHtml(text)}</p>`);
   history.push({ role: 'user', content: text });
   document.querySelectorAll('.choices').forEach(c => c.remove());
   startStreamEntry();
@@ -4227,7 +4232,7 @@ function resumeSavedGame() {
   // Transition to game screen
   const f = FACTIONS[state.faction] || {};
   el('faction-badge').innerHTML = escapeHtml(state.faction.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
-  el('sheet-title').textContent = `⬡ Commander Kramer — ${state.faction}`;
+  el('sheet-title').textContent = `⬡ ${(FACTIONS[state.faction]?.handle || 'Commander')} — ${state.faction}`;
   if (f.abbr) el('hex-player-label').textContent = f.abbr;
   el('faction-screen').classList.add('hidden');
   el('game-screen').classList.remove('hidden');
