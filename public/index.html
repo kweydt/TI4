@@ -2453,6 +2453,7 @@ function retryMapGeneration() {
 }
 
 function enterGame() {
+  if (!_pendingGameStart) return;
   const { factionName, opponentCount, f } = _pendingGameStart;
   _pendingGameStart = null;
 

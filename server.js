@@ -635,20 +635,31 @@ Rules:
 - Total resource production should be roughly balanced across home positions`;
 
   try {
-    const msg = await anthropic.messages.create({
+    // Stream the response so Railway doesn't close the connection on long generations
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    let fullText = '';
+    const stream = await anthropic.messages.stream({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     });
-    const text = msg.content[0].text.trim();
-    // Extract the JSON array from anywhere in the response (handles preamble/fences)
-    const arrayMatch = text.match(/\[[\s\S]*\]/);
+
+    for await (const chunk of stream) {
+      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+        fullText += chunk.delta.text;
+      }
+    }
+
+    const arrayMatch = fullText.match(/\[[\s\S]*\]/);
     if (!arrayMatch) throw new Error('No JSON array found in board response');
     const board = JSON.parse(arrayMatch[0]);
-    res.json({ board });
+    res.end(JSON.stringify({ board }));
   } catch (err) {
     console.error('Board generation error:', err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+    else res.end(JSON.stringify({ error: err.message }));
   }
 });
 
