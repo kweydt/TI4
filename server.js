@@ -611,7 +611,7 @@ app.post('/api/board', async (req, res) => {
 
   const prompt = `Generate a Twilight Imperium 4th edition galaxy map for a game with these factions: ${faction} (the human player), ${opponentNames}.
 
-Return ONLY a JSON array of 37 tile objects — no other text, no explanation, no markdown. The array must be valid JSON.
+Return ONLY a JSON array of 37 tile objects — no other text, no explanation, no markdown, no code fences, no pretty-printing. Output compact JSON with no extra whitespace or newlines inside the array. The entire response must be a single valid JSON array on as few lines as possible.
 
 Layout positions (0-indexed):
 - pos 0: Mecatol Rex (center, fixed)
@@ -642,7 +642,7 @@ Rules:
   try {
     const stream = await anthropic.messages.stream({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
+      max_tokens: 6000,
       messages: [{ role: 'user', content: prompt }]
     });
 

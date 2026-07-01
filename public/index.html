@@ -2428,15 +2428,15 @@ async function generateMapThenStart() {
       const board = JSON.parse(arrayMatch[0]);
       if (!board.length) throw new Error('Empty board returned');
 
-      bar.style.width = '85%';
-      status.textContent = 'Placing factions…';
+      if (bar) bar.style.width = '85%';
+      if (status) status.textContent = 'Placing factions…';
       applyBoardDelta(board);
       saveLocalState();
 
-      bar.style.width = '100%';
+      if (bar) bar.style.width = '100%';
       await new Promise(r => setTimeout(r, 300));
 
-      enterGame();
+      if (_pendingGameStart) enterGame();
     } catch (e) {
       console.error('Map generation failed:', e);
       if (attempt < 3) {
