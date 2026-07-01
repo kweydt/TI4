@@ -2372,6 +2372,9 @@ function startGame(factionName, opponentCount) {
     player: { units: fData.units ? { ...fData.units } : {}, strategyCards: [], actionCards: [], secretObjectives: [], promissoryNotes: [] }
   };
 
+  // Kick off board generation immediately — parallel with the opening LLM turn
+  generateBoard();
+
   const totalPlayers = (opponentCount || 3) + 1;
   const openingMessage = `Begin the game. I am playing as the ${factionName} in a ${totalPlayers}-player game (${opponentCount || 3} opponents). Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
   sendTurn(openingMessage, true);
