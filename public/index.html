@@ -2414,12 +2414,23 @@ async function generateMapThenStart() {
         const txt = await res.text();
         throw new Error(`Server ${res.status}: ${txt}`);
       }
-      const data = await res.json();
-      if (!data.board || !data.board.length) throw new Error('Empty board returned');
+      // Read streamed plain-text response (server pipes chunks to keep connection alive)
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+      }
+      const arrayMatch = fullText.match(/\[[\s\S]*\]/);
+      if (!arrayMatch) throw new Error('No board data in response');
+      const board = JSON.parse(arrayMatch[0]);
+      if (!board.length) throw new Error('Empty board returned');
 
       bar.style.width = '85%';
       status.textContent = 'Placing factions…';
-      applyBoardDelta(data.board);
+      applyBoardDelta(board);
       saveLocalState();
 
       bar.style.width = '100%';

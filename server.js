@@ -634,12 +634,12 @@ Rules:
 - Use real TI4 system names where possible (Mecatol Rex, Arinam/Meer, Abyz/Fria, Bereg/Lirta IV, etc.)
 - Total resource production should be roughly balanced across home positions`;
 
-  try {
-    // Stream the response so Railway doesn't close the connection on long generations
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Transfer-Encoding', 'chunked');
+  // Stream raw text to client so Railway sees activity and doesn't time out
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Transfer-Encoding', 'chunked');
+  res.setHeader('Cache-Control', 'no-cache');
 
-    let fullText = '';
+  try {
     const stream = await anthropic.messages.stream({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
@@ -648,18 +648,14 @@ Rules:
 
     for await (const chunk of stream) {
       if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        fullText += chunk.delta.text;
+        res.write(chunk.delta.text);
       }
     }
-
-    const arrayMatch = fullText.match(/\[[\s\S]*\]/);
-    if (!arrayMatch) throw new Error('No JSON array found in board response');
-    const board = JSON.parse(arrayMatch[0]);
-    res.end(JSON.stringify({ board }));
+    res.end();
   } catch (err) {
     console.error('Board generation error:', err);
     if (!res.headersSent) res.status(500).json({ error: err.message });
-    else res.end(JSON.stringify({ error: err.message }));
+    else res.end();
   }
 });
 
