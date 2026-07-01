@@ -43,6 +43,8 @@
   }
 
   #faction-screen.hidden { display: none; }
+  #map-loading-screen { display: flex; }
+  #map-loading-screen.hidden { display: none; }
 
   /* Resume banner */
   #resume-banner {
@@ -1429,7 +1431,7 @@
   </div>
 </div>
 
-<div id="map-loading-screen" class="hidden" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;z-index:200;">
+<div id="map-loading-screen" class="hidden" style="position:fixed;inset:0;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:24px;z-index:200;">
   <div style="font-family:var(--font-title);font-size:22px;letter-spacing:0.12em;color:var(--gold);text-transform:uppercase">Charting the Galaxy</div>
   <div id="map-loading-faction" style="font-family:var(--font-mono);font-size:11px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase"></div>
   <div style="width:280px;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
