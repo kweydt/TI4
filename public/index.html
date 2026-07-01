@@ -4217,12 +4217,29 @@ function resumeSavedGame() {
   const state = _pendingSavedState;
   _pendingSavedState = null;
   el('resume-banner').classList.add('hidden');
-  startGame(state.faction, state.opponentCount);
-  el('log').innerHTML = '';
+
+  // Restore state first — don't call startGame() which would wipe it
+  currentState = state;
   history = [];
+  streaming = false;
+  phasesSeen = new Set();
+
+  // Transition to game screen
+  const f = FACTIONS[state.faction] || {};
+  el('faction-badge').innerHTML = escapeHtml(state.faction.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
+  el('sheet-title').textContent = `⬡ Commander Kramer — ${state.faction}`;
+  if (f.abbr) el('hex-player-label').textContent = f.abbr;
+  el('faction-screen').classList.add('hidden');
+  el('game-screen').classList.remove('hidden');
+  document.title = `TI4 — ${state.faction}`;
+
+  el('log').innerHTML = '';
+  el('coach-body').innerHTML = '<div id="coach-empty">Awaiting your first decision…</div>';
+  applyStateToUI(currentState);
+
   addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`Welcome back, Commander. You are playing as the **${state.faction}**, Round ${state.round}, ${state.phase} phase. What would you like to do?`));
   el('send-btn').disabled = false;
-  streaming = false;
+
   if (boardState.length === 0) generateBoard();
 }
 
