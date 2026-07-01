@@ -1429,6 +1429,17 @@
   </div>
 </div>
 
+<div id="map-loading-screen" class="hidden" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;z-index:200;">
+  <div style="font-family:var(--font-title);font-size:22px;letter-spacing:0.12em;color:var(--gold);text-transform:uppercase">Charting the Galaxy</div>
+  <div id="map-loading-faction" style="font-family:var(--font-mono);font-size:11px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase"></div>
+  <div style="width:280px;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+    <div id="map-loading-bar" style="height:100%;width:0%;background:var(--gold);border-radius:2px;transition:width 0.4s ease"></div>
+  </div>
+  <div id="map-loading-status" style="font-family:var(--font-mono);font-size:10px;color:var(--dim)">Generating star systems…</div>
+  <div id="map-loading-error" class="hidden" style="font-size:12px;color:#e05050;text-align:center;max-width:300px"></div>
+  <button id="map-loading-retry" class="hidden" onclick="retryMapGeneration()" style="padding:8px 20px;border-radius:6px;background:var(--blue);color:#000;border:none;font-size:12px;font-weight:600;cursor:pointer">Retry</button>
+</div>
+
 <div id="game-screen" class="hidden">
 <div id="app">
 
@@ -2345,38 +2356,115 @@ el('fs-start-btn').addEventListener('click', async () => {
 
 // ── Game Startup ────────────────────────────────────────────────────────────────
 
+let _pendingGameStart = null;
+
 function startGame(factionName, opponentCount) {
   const f = FACTIONS[factionName] || FACTIONS['Federation of Sol'];
+  const fData = f;
+  opponentCount = opponentCount || 3;
 
-  // Update game UI for chosen faction
-  el('faction-badge').innerHTML = escapeHtml(factionName.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
-  el('sheet-title').textContent = `⬡ ${f.handle || 'Commander'} — ${factionName}`;
-  el('hex-player-label').textContent = f.abbr;
-
-  // Transition screens
-  el('faction-screen').classList.add('hidden');
-  el('game-screen').classList.remove('hidden');
-  document.title = `TI4 — ${factionName}`;
-
-  // Reset game state UI
-  el('log').innerHTML = '';
-  el('coach-body').innerHTML = '<div id="coach-empty">Awaiting your first decision…</div>';
+  // Set up minimal state (enough for the board API call)
+  currentState = {
+    faction: factionName,
+    opponentCount,
+    speakerIndex: Math.floor(Math.random() * (opponentCount + 1)),
+    player: { units: fData.units ? { ...fData.units } : {}, strategyCards: [], actionCards: [], secretObjectives: [], promissoryNotes: [] }
+  };
+  boardState = [];
   history = [];
   streaming = false;
   phasesSeen = new Set();
-  const fData = FACTIONS[factionName] || {};
-  currentState = {
-    faction: factionName,
-    opponentCount: opponentCount || 3,
-    speakerIndex: Math.floor(Math.random() * ((opponentCount || 3) + 1)),
-    player: { units: fData.units ? { ...fData.units } : {}, strategyCards: [], actionCards: [], secretObjectives: [], promissoryNotes: [] }
-  };
+  _pendingGameStart = { factionName, opponentCount, f };
 
-  // Kick off board generation immediately — parallel with the opening LLM turn
-  generateBoard();
+  // Show loading screen
+  el('faction-screen').classList.add('hidden');
+  el('map-loading-screen').classList.remove('hidden');
+  el('map-loading-faction').textContent = factionName;
+  el('map-loading-status').textContent = 'Generating star systems…';
+  el('map-loading-error').classList.add('hidden');
+  el('map-loading-retry').classList.add('hidden');
+  el('map-loading-bar').style.width = '0%';
+  document.title = `TI4 — ${factionName}`;
 
-  const totalPlayers = (opponentCount || 3) + 1;
-  const openingMessage = `Begin the game. I am playing as the ${factionName} in a ${totalPlayers}-player game (${opponentCount || 3} opponents). Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
+  generateMapThenStart();
+}
+
+async function generateMapThenStart() {
+  const bar = el('map-loading-bar');
+  const status = el('map-loading-status');
+
+  // Animate progress bar while waiting
+  bar.style.width = '15%';
+  let attempt = 0;
+
+  async function tryGenerate() {
+    attempt++;
+    status.textContent = attempt > 1 ? `Retrying… (attempt ${attempt})` : 'Generating star systems…';
+    bar.style.width = (attempt === 1 ? '15' : '55') + '%';
+
+    try {
+      const res = await fetch('/api/board', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: currentState })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`Server ${res.status}: ${txt}`);
+      }
+      const data = await res.json();
+      if (!data.board || !data.board.length) throw new Error('Empty board returned');
+
+      bar.style.width = '85%';
+      status.textContent = 'Placing factions…';
+      applyBoardDelta(data.board);
+      saveLocalState();
+
+      bar.style.width = '100%';
+      await new Promise(r => setTimeout(r, 300));
+
+      enterGame();
+    } catch (e) {
+      console.error('Map generation failed:', e);
+      if (attempt < 3) {
+        status.textContent = `Attempt ${attempt} failed, retrying…`;
+        bar.style.width = '40%';
+        await new Promise(r => setTimeout(r, 1500));
+        return tryGenerate();
+      }
+      // All retries failed
+      el('map-loading-status').textContent = 'Map generation failed.';
+      el('map-loading-error').textContent = e.message;
+      el('map-loading-error').classList.remove('hidden');
+      el('map-loading-retry').classList.remove('hidden');
+    }
+  }
+
+  await tryGenerate();
+}
+
+function retryMapGeneration() {
+  el('map-loading-error').classList.add('hidden');
+  el('map-loading-retry').classList.add('hidden');
+  el('map-loading-bar').style.width = '0%';
+  generateMapThenStart();
+}
+
+function enterGame() {
+  const { factionName, opponentCount, f } = _pendingGameStart;
+  _pendingGameStart = null;
+
+  el('map-loading-screen').classList.add('hidden');
+  el('game-screen').classList.remove('hidden');
+
+  el('faction-badge').innerHTML = escapeHtml(factionName.toUpperCase()) + ' <span style="opacity:0.45;font-size:9px">ⓘ</span>';
+  el('sheet-title').textContent = `⬡ ${f.handle || 'Commander'} — ${factionName}`;
+  el('hex-player-label').textContent = f.abbr;
+  el('log').innerHTML = '';
+  el('coach-body').innerHTML = '<div id="coach-empty">Awaiting your first decision…</div>';
+
+  const totalPlayers = opponentCount + 1;
+  const openingMessage = `Begin the game. I am playing as the ${factionName} in a ${totalPlayers}-player game (${opponentCount} opponents). Set the scene for Round 1 and the Strategy Phase. The UI will show me the strategy cards — do not list or describe them. In [COACH], tell me which card to pick and why for my faction.`;
   sendTurn(openingMessage, true);
 }
 
@@ -3879,7 +3967,7 @@ function finalizeStream(fullText) {
       saveLocalState();
     } catch(e) { console.warn('State parse failed:', e); }
   }
-  if (boardState.length === 0 && currentState?.faction) generateBoard();
+  // no-op: board is now generated before the game starts
   const sections = parseResponse(fullText);
   if (!sections.gm && !sections.coach && !sections.opponents) {
     const clean = fullText.replace(/<!--STATE:[\s\S]*?-->/g, '').trim();
