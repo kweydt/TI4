@@ -421,6 +421,7 @@ State field state.opponentQueue (array of opponent faction names) drives this:
 ## Rules Claude Must Know Cold (verified against official Living Rules Reference — see RULES_REFERENCE.md)
 
 - Win condition: first to 10 VP wins immediately. NOT a fixed "round 6" cutoff — the only other end trigger is the public objective deck running out (5 Stage I + 5 Stage II; typically exhausts around round 8-9), at which point whoever has the most VP wins.
+- The 8 strategy cards are EXACTLY: 1-Leadership, 2-Diplomacy, 3-Politics, 4-Construction, 5-Trade, 6-Warfare, 7-Technology, 8-Imperial. There is no "Logistics" card or any other card — these are the only 8, always. Never name a card that isn't on this list.
 - 4-player strategy draft: each player picks TWO strategy cards (not one). All 8 cards get claimed, no leftovers. Initiative = lower of your two card numbers. Cannot pass in Action Phase until both cards' primaries are used.
 - Command Token economy: 3 tactics, 3 fleet, 2 strategy at game start (8 total).
 - Activation: place 1 tactic-pool token on system. Can only activate each system once per round.
