@@ -3729,21 +3729,39 @@ function setupMapInteraction() {
   container.addEventListener('touchend', () => { mapDragging = false; lastTouchDist = null; });
 }
 
-async function generateBoard() {
-  const svgEl = document.getElementById('galaxy-svg');
-  if (svgEl) {
-    svgEl.innerHTML = `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" font-family="IBM Plex Mono" font-size="8" fill="#4a5570">generating…</text>`;
-    svgEl.setAttribute('width', 120); svgEl.setAttribute('height', 30);
-    svgEl.setAttribute('viewBox', '0 0 120 30');
+async function generateBoard(retryCount) {
+  retryCount = retryCount || 0;
+  const modal = el('map-modal');
+  const emptyMsg = el('map-empty-msg');
+  const wrapper = el('map-transform-wrapper');
+
+  // Show generating state in empty message if drawer is open
+  if (modal && !modal.classList.contains('hidden') && emptyMsg) {
+    emptyMsg.style.display = 'flex';
+    emptyMsg.querySelector('p') && (emptyMsg.querySelector('p').textContent = 'Generating galaxy map…');
   }
+
   try {
     const res = await fetch('/api/board', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: currentState }) });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
-    if (data.board) { boardState = []; applyBoardDelta(data.board); }
+    if (data.board) {
+      boardState = [];
+      applyBoardDelta(data.board);
+      saveLocalState();
+      // If the map drawer is already open, re-render it now
+      if (modal && !modal.classList.contains('hidden')) {
+        if (emptyMsg) emptyMsg.style.display = 'none';
+        if (wrapper) { wrapper.innerHTML = buildMapSVG(); }
+      }
+    }
   } catch (e) {
     console.warn('Board generation failed:', e);
-    if (svgEl) svgEl.innerHTML = '';
+    if (retryCount < 2) {
+      setTimeout(() => generateBoard(retryCount + 1), 3000);
+    } else if (modal && !modal.classList.contains('hidden') && emptyMsg) {
+      emptyMsg.querySelector('p') && (emptyMsg.querySelector('p').textContent = 'Map generation failed. Tap MAP to retry.');
+    }
   }
 }
 
