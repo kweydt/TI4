@@ -44,6 +44,40 @@
 
   #faction-screen.hidden { display: none; }
 
+  /* Resume banner */
+  #resume-banner {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 32px;
+    background: linear-gradient(90deg, rgba(74,158,255,0.08) 0%, rgba(74,158,255,0.03) 100%);
+    border-bottom: 1px solid rgba(74,158,255,0.25);
+    animation: resumeBannerIn 0.35s ease;
+  }
+  #resume-banner.hidden { display: none; }
+  @keyframes resumeBannerIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .rb-icon { font-size: 22px; flex-shrink: 0; }
+  .rb-text { flex: 1; min-width: 0; }
+  .rb-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .rb-sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .rb-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .rb-btn-resume {
+    padding: 7px 18px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    background: var(--accent); color: #000; border: none; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .rb-btn-resume:hover { opacity: 0.85; }
+  .rb-btn-new {
+    padding: 7px 14px; border-radius: 6px; font-size: 12px;
+    background: transparent; color: var(--dim); border: 1px solid var(--border); cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .rb-btn-new:hover { color: var(--text); border-color: var(--dim); }
+
   /* Header */
   #fs-header {
     flex-shrink: 0;
@@ -1302,6 +1336,18 @@
     </div>
   </div>
 
+  <div id="resume-banner" class="hidden">
+    <div class="rb-icon">⬡</div>
+    <div class="rb-text">
+      <div class="rb-title" id="rb-title">Saved game found</div>
+      <div class="rb-sub" id="rb-sub"></div>
+    </div>
+    <div class="rb-actions">
+      <button class="rb-btn-resume" onclick="resumeSavedGame()">Continue</button>
+      <button class="rb-btn-new" onclick="dismissResumeBanner()">New Game</button>
+    </div>
+  </div>
+
   <div id="fs-body">
     <!-- Faction List -->
     <div id="fs-list">
@@ -2032,18 +2078,7 @@ function renderFactionDetail(key, container) {
     ${f.lore ? `
     <div>
       <div class="fs-section-title">Backstory</div>
-      <div class="fs-lore-box">
-        <div class="fs-lore-text">${escapeHtml(f.lore)}</div>
-        <div class="fs-lore-fade"></div>
-      </div>
-      <button class="fs-lore-toggle" onclick="
-        const box = this.previousElementSibling;
-        const txt = box.querySelector('.fs-lore-text');
-        const fade = box.querySelector('.fs-lore-fade');
-        const expanded = txt.classList.toggle('expanded');
-        fade.classList.toggle('hidden', expanded);
-        this.textContent = expanded ? '▲ Show less' : '▼ Read more';
-      ">▼ Read more</button>
+      <div class="fs-lore-text">${escapeHtml(f.lore)}</div>
     </div>` : ''}
 
     <div>
@@ -4156,7 +4191,32 @@ function saveLocalState() {
   if (boardState.length) localStorage.setItem('ti4_board', JSON.stringify(boardState));
 }
 
-// If there's a local saved game, offer to resume it
+// Saved-game resume — inline banner instead of confirm()
+let _pendingSavedState = null;
+
+function resumeSavedGame() {
+  if (!_pendingSavedState) return;
+  const state = _pendingSavedState;
+  _pendingSavedState = null;
+  el('resume-banner').classList.add('hidden');
+  startGame(state.faction, state.opponentCount);
+  el('log').innerHTML = '';
+  history = [];
+  addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`Welcome back, Commander. You are playing as the **${state.faction}**, Round ${state.round}, ${state.phase} phase. What would you like to do?`));
+  el('send-btn').disabled = false;
+  streaming = false;
+  if (boardState.length === 0) generateBoard();
+}
+
+function dismissResumeBanner() {
+  _pendingSavedState = null;
+  currentState = null;
+  boardState = [];
+  el('resume-banner').classList.add('hidden');
+  localStorage.removeItem('ti4_state');
+  localStorage.removeItem('ti4_board');
+}
+
 (async () => {
   try {
     const raw = localStorage.getItem('ti4_state');
@@ -4168,20 +4228,14 @@ function saveLocalState() {
     if (boardRaw) { boardState = []; applyBoardDelta(JSON.parse(boardRaw)); }
     currentState = state;
     applyStateToUI(state);
+    _pendingSavedState = state;
 
-    const resume = confirm(`Continue saved game as ${state.faction}?`);
-    if (resume) {
-      startGame(state.faction, state.opponentCount);
-      el('log').innerHTML = '';
-      history = [];
-      addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`Welcome back, Commander. You are playing as the **${state.faction}**, Round ${state.round}, ${state.phase} phase. What would you like to do?`));
-      el('send-btn').disabled = false;
-      streaming = false;
-      if (boardState.length === 0) generateBoard();
-    } else {
-      currentState = null;
-      boardState = [];
-    }
+    const fData = FACTIONS[state.faction] || {};
+    el('rb-title').textContent = `Continue as ${state.faction}`;
+    const opponents = state.opponentCount || 3;
+    const phaseLabel = state.phase ? ` · ${state.phase} Phase` : '';
+    el('rb-sub').textContent = `Round ${state.round}${phaseLabel} · ${opponents} opponent${opponents !== 1 ? 's' : ''}`;
+    el('resume-banner').classList.remove('hidden');
   } catch(e) { /* no saved state */ }
 })();
 </script>
