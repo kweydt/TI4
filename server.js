@@ -498,7 +498,7 @@ function buildSystemPrompt(state) {
 ## Current Game State
 Round: ${state.round} | Phase: ${state.phase}
 Speaker: ${(() => { const all = [factionName, ...(state.opponents||[]).map(o=>o.name)]; return all[state.speakerIndex ?? 0] || factionName; })()}
-Your VP: ${state.player.vp} | Opponents: ${state.opponents.map(o => `${o.name} ${o.vp}VP`).join(', ')}
+Your VP: ${state.player.vp} | Opponents: ${(state.opponents||[]).map(o => `${o.name} ${o.vp}VP`).join(', ')}
 Your Command Tokens — Tactics: ${state.player.commandTokens.tactics}, Fleet: ${state.player.commandTokens.fleet}, Strategy: ${state.player.commandTokens.strategy}
 Your Trade Goods: ${state.player.tradeGoods} | Commodities: ${state.player.commodities}
 Your Strategy Cards: ${state.player.strategyCards?.length ? state.player.strategyCards.join(', ') : 'none chosen yet'}
