@@ -2759,6 +2759,36 @@ function applyEvents(eventLines) {
         if (idx >= 0) currentState.speakerIndex = idx;
         break;
       }
+      case 'USE_PRIMARY': {
+        const card = detail.trim();
+        const playerCards = currentState.player?.strategyCards || [];
+        if (playerCards.includes(card)) {
+          if (!currentState.player.usedPrimaries) currentState.player.usedPrimaries = [];
+          if (!currentState.player.usedPrimaries.includes(card))
+            currentState.player.usedPrimaries.push(card);
+        } else {
+          // Opponent used the primary
+          (currentState.opponents||[]).forEach(o => {
+            if ((o.strategyCards||[]).includes(card)) o.usedPrimary = card;
+          });
+        }
+        break;
+      }
+      case 'PASS': {
+        const name = detail.trim().toLowerCase();
+        if (name === (currentState.faction||'').toLowerCase() ||
+            name === 'kramer' || name === 'player') {
+          if (!currentState.player) currentState.player = {};
+          currentState.player.hasPassed = true;
+        } else {
+          (currentState.opponents||[]).forEach(o => {
+            if ((o.name||'').toLowerCase().includes(name) ||
+                (o.faction||'').toLowerCase().includes(name))
+              o.hasPassed = true;
+          });
+        }
+        break;
+      }
     }
   }
   applyStateToUI(currentState);

@@ -349,11 +349,15 @@ DISCARD: action-card "Card Name"
 DRAW: secret-objective "Name — condition text"
 SCORE: objective "Name" (+NVP)
 OPP_SCORE: opponent-name scored "Objective Name" (+NVP)
+USE_PRIMARY: card-name  (emit when ANY player uses a strategy card primary — Kramer or opponent)
+PASS: player-name       (emit when a player passes in the Action Phase)
 RESEARCH: Technology Name
 LAW: "Name — brief effect" passed   (or repealed)
 SPEAKER: player-name
 
 Use OPP_SCORE every time an opponent scores VP (Status Phase or otherwise). Use SCORE only for Kramer's own scoring.
+Emit USE_PRIMARY whenever a strategy card primary is executed (by any player). Emit PASS whenever a player passes in the Action Phase.
+At the start of each new round (entering Strategy Phase), emit STATE with player.usedPrimaries=[], player.hasPassed=false, and opponents[].usedPrimary=null, opponents[].hasPassed=false for all opponents — this resets the action-phase tracking.
 
 Include every event that happened. Omit verbs with no activity. If nothing trackable happened, omit the EVENTS block entirely.
 
@@ -403,6 +407,12 @@ At the very start of the game (Round 1, before the first Strategy Phase), you MU
 - Walk through tactical, strategic, and component actions
 - Explain Command Token spending — core resource constraint
 - Coach fleet composition and movement decisions for ${factionName}
+
+#### State is authoritative — do NOT infer from history
+The injected "Current Game State" above is always correct. Do not try to remember card usage or pass status from conversation history — read it from the state:
+- "Your Strategy Cards" shows [PRIMARY USED] or [available] for each card. Never offer a primary that shows [PRIMARY USED].
+- "passed=YES" for any opponent means they are out of the Action Phase — do not include them in opponentQueue.
+- A player with all primaries marked [PRIMARY USED] can still take tactical/component actions, but cannot use a Strategic Action again this round.
 
 #### Turn-by-turn simulation (CRITICAL — do not batch opponent turns)
 The Action Phase is strictly round-robin in real TI4: one player acts per turn, in initiative order, looping until everyone has passed. Kramer must see this turn-by-turn, not as a single end-of-round summary, because secondary abilities and other reactions only matter if he sees them coming one at a time.
@@ -527,7 +537,18 @@ Speaker: ${(() => { const all = [factionName, ...(state.opponents||[]).map(o=>o.
 Your VP: ${state.player.vp} | Opponents: ${(state.opponents||[]).map(o => `${o.name} ${o.vp}VP`).join(', ')}
 Your Command Tokens — Tactics: ${state.player.commandTokens.tactics}, Fleet: ${state.player.commandTokens.fleet}, Strategy: ${state.player.commandTokens.strategy}
 Your Trade Goods: ${state.player.tradeGoods} | Commodities: ${state.player.commodities}
-Your Strategy Cards: ${state.player.strategyCards?.length ? state.player.strategyCards.join(', ') : 'none chosen yet'}
+Your Strategy Cards: ${(() => {
+  const cards = state.player?.strategyCards || [];
+  const used = state.player?.usedPrimaries || [];
+  if (!cards.length) return 'none chosen yet';
+  return cards.map(c => used.includes(c) ? `${c} [PRIMARY USED]` : `${c} [available]`).join(', ');
+})()}
+Your Pass Status: ${state.player?.hasPassed ? 'PASSED this round' : 'active'}
+Opponents this round:
+${(state.opponents||[]).map(o => {
+  const cards = (o.strategyCards||[]).map(c => o.usedPrimary === c ? `${c}[USED]` : c).join(', ') || 'no cards';
+  return `  ${o.name} (${o.faction||'?'}): cards=${cards} | passed=${o.hasPassed?'YES':'no'} | vp=${o.vp||0}`;
+}).join('\n') || '  (none)'}
 Your Planets: ${state.player.planets.map(p => `${p.name}(${p.resources}/${p.influence},${p.ready ? 'ready' : 'exhausted'})`).join(', ')}
 Your Technologies: ${state.player.technologies.join(', ') || 'none'}
 Your Action Cards in hand: ${state.player.actionCards?.length ? state.player.actionCards.join(', ') : 'none'}
