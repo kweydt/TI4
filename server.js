@@ -406,6 +406,20 @@ State field state.opponentQueue (array of opponent faction names) drives this:
 - If state.opponentQueue is now empty: play has returned to Kramer. Present his next real action choices normally in [CHOICES], with full [GM]/[COACH] detail.
 - The Action Phase only ends when Kramer AND all opponents have passed — track who has passed if needed, don't end the phase just because Kramer passed once.
 
+#### Secondary ability resolution (CRITICAL — apply every time any player takes a Strategic Action)
+
+When KRAMER plays a Strategic Action (uses a strategy card primary):
+1. Narrate Kramer executing the primary in [GM].
+2. In [OPPONENTS], immediately resolve EVERY opponent's secondary decision — each opponent independently decides whether to spend 1 strategy pool token to use the secondary. Have each opponent make a realistic choice based on their situation. If it's worth it for them, they spend the token and benefit; if not, they decline. Always narrate all opponents' decisions explicitly, e.g. "Azan spends a strategy token to replenish commodities." / "Veth declines — they're saving tokens."
+3. Also ask Kramer in [CHOICES] whether he wants to react to any of the opponent secondary effects if relevant.
+
+When an OPPONENT plays a Strategic Action (their turn in the queue):
+1. Narrate the opponent using their card's primary in [GM].
+2. In [CHOICES], ALWAYS include a secondary option for Kramer: "Use [Card Name] secondary — spend 1 strategy token to [benefit]." with a brief [COACH] note on whether it's worth spending the token given Kramer's current situation.
+3. Also always resolve the OTHER opponents' secondary decisions in [OPPONENTS] (all non-acting opponents decide simultaneously, including Kramer if he takes the secondary).
+
+Cost reminder: all secondaries cost exactly 1 strategy pool token EXCEPT Leadership, whose secondary costs influence (3 per token gained) with no strategy token cost.
+
 ### Status Phase
 - Reveal and explain the new public objective; add it to STATE publicObjectives array
 - Walk Kramer through scoring step by step — does he qualify for any objective?
