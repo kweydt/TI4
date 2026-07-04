@@ -2743,6 +2743,56 @@ function applyEvents(eventLines) {
         }
         break;
       }
+      case 'CAPTURE': {
+        // "opponent-name planet-name"
+        const cm = detail.match(/^(.+?)\s+(.+)$/);
+        if (!cm) break;
+        const cOpp = cm[1].trim(), cPlanet = cm[2].trim();
+        const opp = (currentState.opponents||[]).find(o =>
+          (o.name||'').toLowerCase().includes(cOpp.toLowerCase()) ||
+          (o.faction||'').toLowerCase().includes(cOpp.toLowerCase())
+        );
+        if (opp) {
+          if (!opp.planets) opp.planets = [];
+          if (!opp.planets.find(p => (typeof p === 'string' ? p : p.name).toLowerCase() === cPlanet.toLowerCase()))
+            opp.planets.push({ name: cPlanet, res: 1, inf: 1 });
+        }
+        // Remove from player planets if they had it
+        if (currentState.player?.planets) {
+          currentState.player.planets = currentState.player.planets.filter(p => p.name.toLowerCase() !== cPlanet.toLowerCase());
+        }
+        break;
+      }
+      case 'LOSE_PLANET': {
+        const lm = detail.match(/^(.+?)\s+(.+)$/);
+        if (!lm) break;
+        const lOpp = lm[1].trim(), lPlanet = lm[2].trim();
+        const opp = (currentState.opponents||[]).find(o =>
+          (o.name||'').toLowerCase().includes(lOpp.toLowerCase()) ||
+          (o.faction||'').toLowerCase().includes(lOpp.toLowerCase())
+        );
+        if (opp && opp.planets) {
+          opp.planets = opp.planets.filter(p => (typeof p === 'string' ? p : p.name).toLowerCase() !== lPlanet.toLowerCase());
+        }
+        break;
+      }
+      case 'OPP_FLEET': {
+        // "opponent-name system-name carriers:N fighters:N ..."
+        const fm = detail.match(/^(.+?)\s+([^\s]+)\s+(.+)$/);
+        if (!fm) break;
+        const fOpp = fm[1].trim(), fSys = fm[2].trim(), fShips = fm[3].trim();
+        const opp = (currentState.opponents||[]).find(o =>
+          (o.name||'').toLowerCase().includes(fOpp.toLowerCase()) ||
+          (o.faction||'').toLowerCase().includes(fOpp.toLowerCase())
+        );
+        if (opp) {
+          if (!opp.fleets) opp.fleets = {};
+          const ships = {};
+          fShips.replace(/(\w+):(\d+)/g, (_, type, n) => { ships[type] = parseInt(n); });
+          if (Object.keys(ships).length) opp.fleets[fSys] = ships;
+        }
+        break;
+      }
       case 'INTENT': {
         const im = detail.match(/^(.+?)\s+"(.+)"$/);
         if (!im) break;
@@ -4190,6 +4240,16 @@ function finalizeStream(fullText) {
     applyEvents(eventLines);
     renderEventReceipt(eventLines);
   }
+  // Append to round action log
+  if (currentState && eventLines.length) {
+    if (!currentState.roundLog) currentState.roundLog = [];
+    const summary = eventLines.slice(0, 3).join('; ');
+    const actor = eventLines.find(l => /^PASS:/i.test(l))
+      ? (eventLines[0].split(':')[1]?.trim() || 'Unknown')
+      : (currentState.faction || 'Kramer');
+    currentState.roundLog.push({ player: actor, action: summary, round: currentState.round });
+    if (currentState.roundLog.length > 30) currentState.roundLog = currentState.roundLog.slice(-30);
+  }
   // Then apply STATE block for high-level fields (round, phase, opponent VP, objectives)
   const stateMatch = fullText.match(/<!--STATE:([\s\S]*?)-->/);
   if (stateMatch) {
@@ -4593,6 +4653,19 @@ function dismissResumeBanner() {
     if (!raw) return;
     const state = JSON.parse(raw);
     if (!state?.faction || !state?.round || state.round < 1) return;
+    // Migrate old saves to current schema
+    const STATE_VERSION = 2;
+    if ((state.stateVersion || 0) < STATE_VERSION) {
+      (state.opponents || []).forEach(o => {
+        if (Array.isArray(o.planets) && o.planets.length && typeof o.planets[0] === 'string')
+          o.planets = o.planets.map(name => ({ name, res: 2, inf: 2 }));
+        if (!o.fleets) o.fleets = {};
+      });
+      if (!state.player) state.player = {};
+      if (!state.player.fleets) state.player.fleets = {};
+      if (!state.roundLog) state.roundLog = [];
+      state.stateVersion = STATE_VERSION;
+    }
 
     const boardRaw = localStorage.getItem('ti4_board');
     if (boardRaw) { boardState = []; applyBoardDelta(JSON.parse(boardRaw)); }

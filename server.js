@@ -234,11 +234,11 @@ const FACTIONS = {
 
 // Opponents pool — picks 3 that don't include the player's faction
 const OPPONENT_POOL = [
-  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Antimass Deflectors', 'Sarween Tools'], tradeGoods: 3, attitude: 'neutral', intent: 'Accumulating trade goods and building diplomatic leverage; eyeing mid-ring planets for economic expansion.' },
-  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral', intent: 'Racing for tech superiority; will turtle early and snowball into an unstoppable research engine.' },
-  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['[0.0.0]'],                     unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral', intent: 'Aggressive expansion toward Mecatol Rex; will threaten neighbors early to establish board dominance.' },
-  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Plasma Scoring'], tradeGoods: 2, attitude: 'neutral', intent: 'Leveraging Dreadnought strength to control key systems; spending trade goods strategically in combat.' },
-  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Archon Ren', 'Archon Tau'],     unitSummary: 'Standard Xxcha opening', technologies: ['Graviton Laser System'], tradeGoods: 0, attitude: 'neutral', intent: 'Accumulating political influence and VP through Agenda Phase manipulation; avoiding early combat.' },
+  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: [{name:'Arretze',res:2,inf:1},{name:'Kamdorn',res:0,inf:1},{name:'Hercant',res:1,inf:1}], fleets: {}, technologies: ['Antimass Deflectors', 'Sarween Tools'], tradeGoods: 3, attitude: 'neutral', intent: 'Accumulating trade goods and building diplomatic leverage; eyeing mid-ring planets for economic expansion.' },
+  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: [{name:'Jol',res:1,inf:2},{name:'Nar',res:2,inf:3}],                   fleets: {}, technologies: ['Neural Motivator', 'Sarween Tools', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral', intent: 'Racing for tech superiority; will turtle early and snowball into an unstoppable research engine.' },
+  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: [{name:'[0.0.0]',res:5,inf:0}],                     fleets: {}, technologies: ['Neural Motivator', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral', intent: 'Aggressive expansion toward Mecatol Rex; will threaten neighbors early to establish board dominance.' },
+  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: [{name:'Arc Prime',res:4,inf:0},{name:'Wren Terra',res:2,inf:1}],      fleets: {}, technologies: ['Antimass Deflectors', 'Plasma Scoring'], tradeGoods: 2, attitude: 'neutral', intent: 'Leveraging Dreadnought strength to control key systems; spending trade goods strategically in combat.' },
+  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: [{name:'Archon Ren',res:2,inf:3},{name:'Archon Tau',res:1,inf:1}],     fleets: {}, technologies: ['Graviton Laser System'], tradeGoods: 0, attitude: 'neutral', intent: 'Accumulating political influence and VP through Agenda Phase manipulation; avoiding early combat.' },
 ];
 
 function getOpponents(playerFaction, count) {
@@ -252,6 +252,8 @@ function getDraftRule(totalPlayers) {
   }
   return `VERIFIED RULE: in a ${totalPlayers}-player game, each player drafts only ONE strategy card. With 8 cards and ${totalPlayers} players, ${8 - totalPlayers} card(s) go unpicked — place 1 trade good on each unpicked card; whoever picks it in a later round's draft gains those accumulated trade goods. Initiative for the Action Phase is simply each player's one card number.`;
 }
+
+const STATE_VERSION = 2;
 
 // ── System Prompt ──────────────────────────────────────────────────────────────
 
@@ -297,9 +299,15 @@ RESEARCH: Technology Name
 LAW: "Name — effect" passed/repealed
 SPEAKER: player-name
 INTENT: opponent-name "one-sentence description of their current plan"
+CAPTURE: opponent-name planet-name (opponent gains a planet)
+LOSE_PLANET: opponent-name planet-name (opponent loses a planet)
+OPP_FLEET: opponent-name system-name carriers:N fighters:N cruisers:N destroyers:N dreadnoughts:N
 -->
 Emit USE_PRIMARY when any player executes a strategy card primary.
-Emit INTENT whenever an opponent's plan meaningfully shifts (after a major combat, scoring an objective, or a strategic pivot). Keep intent under 15 words. Emit PASS when any player passes. Emit OPP_SPEND for every opponent token or trade-good expenditure (activating a system = 1 tactics; using a secondary = 1 strategy).
+Emit INTENT whenever an opponent's plan meaningfully shifts (after a major combat, scoring an objective, or a strategic pivot). Keep intent under 15 words.
+Emit CAPTURE/LOSE_PLANET whenever any opponent gains or loses control of a planet.
+Emit OPP_FLEET after any opponent fleet moves or is built — show ship counts in the destination system (omit 0-count types).
+New round start: also reset roundLog to [] in STATE. Emit PASS when any player passes. Emit OPP_SPEND for every opponent token or trade-good expenditure (activating a system = 1 tactics; using a secondary = 1 strategy).
 New round start: STATE must reset player.usedPrimaries=[], player.hasPassed=false, and all opponents' usedPrimary=null, hasPassed=false.
 
 STATE block (changed fields only, after EVENTS):
@@ -367,6 +375,7 @@ function buildInitialState(factionName, opponentCount) {
   const f = FACTIONS[factionName] || FACTIONS['Federation of Sol'];
   const opponents = getOpponents(factionName, opponentCount);
   return {
+    stateVersion: STATE_VERSION,
     round: 1,
     phase: 'strategy',
     turn: 0,
@@ -381,6 +390,7 @@ function buildInitialState(factionName, opponentCount) {
       strategyCards: [],
       planets: JSON.parse(JSON.stringify(f.planets)),
       units: { ...f.units },
+      fleets: {},
       technologies: [...f.startingTech],
       actionCards: [],
       secretObjectives: [],
@@ -393,8 +403,31 @@ function buildInitialState(factionName, opponentCount) {
     publicObjectives: [],
     scoredObjectives: [],
     activeLaws: [],
-    opponentQueue: []
+    opponentQueue: [],
+    roundLog: []
   };
+}
+
+function migrateState(state) {
+  const v = state.stateVersion || 0;
+  if (v >= STATE_VERSION) return state;
+
+  // v0→v1: no-op (pre-versioning)
+  // v1→v2: expand opponent planet strings to objects; add fleets/roundLog
+  if (v < 2) {
+    (state.opponents || []).forEach(o => {
+      if (Array.isArray(o.planets) && o.planets.length && typeof o.planets[0] === 'string') {
+        o.planets = o.planets.map(name => ({ name, res: 2, inf: 2 }));
+      }
+      if (!o.fleets) o.fleets = {};
+    });
+    if (!state.player) state.player = {};
+    if (!state.player.fleets) state.player.fleets = {};
+    if (!state.roundLog) state.roundLog = [];
+  }
+
+  state.stateVersion = STATE_VERSION;
+  return state;
 }
 
 // ── Persistence ────────────────────────────────────────────────────────────────
@@ -414,6 +447,7 @@ function deepMerge(target, source) {
 
 function buildSystemPrompt(state, mapSummary) {
   const factionName = state.faction || 'Federation of Sol';
+  migrateState(state);
   return `${buildBasePrompt(factionName, state.opponents?.length || state.opponentCount)}
 
 ## Current Game State
@@ -433,7 +467,12 @@ Opponents this round:
 ${(state.opponents||[]).map(o => {
   const cards = (o.strategyCards||[]).map(c => o.usedPrimary === c ? `${c}[USED]` : c).join(', ') || 'no cards';
   const ct = o.commandTokens || {tactics:3,fleet:3,strategy:2};
-  return `  ${o.name} (${o.faction||'?'}): cards=${cards} | passed=${o.hasPassed?'YES':'no'} | vp=${o.vp||0} | tokens: tac=${ct.tactics} fleet=${ct.fleet} strat=${ct.strategy} | tg=${o.tradeGoods||0}\n    intent: ${o.intent||'(unknown)'}`;
+  const planetList = (o.planets||[]).map(p => typeof p === 'string' ? p : `${p.name}(${p.res}R/${p.inf}I)`).join(', ') || 'none';
+  const fleetLines = Object.entries(o.fleets||{}).map(([sys,ships]) => {
+    const parts = Object.entries(ships).filter(([,n])=>n>0).map(([t,n])=>`${n}${t}`).join('+');
+    return `${sys}:[${parts}]`;
+  }).join(' ') || 'home only';
+  return `  ${o.name} (${o.faction||'?'}): cards=${cards} | passed=${o.hasPassed?'YES':'no'} | vp=${o.vp||0} | tokens: tac=${ct.tactics} fleet=${ct.fleet} strat=${ct.strategy} | tg=${o.tradeGoods||0}\n    planets: ${planetList}\n    fleets: ${fleetLines}\n    intent: ${o.intent||'(unknown)'}`;
 }).join('\n') || '  (none)'}
 Your Planets: ${state.player.planets.map(p => `${p.name}(${p.resources}/${p.influence},${p.ready ? 'ready' : 'exhausted'})`).join(', ')}
 Your Technologies: ${state.player.technologies.join(', ') || 'none'}
@@ -444,6 +483,7 @@ Your Units: ${JSON.stringify(state.player.units)}
 Custodians Token Removed (unlocks Agenda Phase): ${state.custodiansRemoved ? 'yes' : 'no'}
 Opponent Turn Queue (Action Phase only): ${state.opponentQueue?.length ? state.opponentQueue.join(', ') : 'empty — it is Kramer\'s turn'}
 Active Laws: ${state.activeLaws?.length ? state.activeLaws.join(', ') : 'none'}
+${state.roundLog?.length ? `\n## Round ${state.round} Action Log (authoritative sequence)\n${state.roundLog.map((e,i)=>`${i+1}. [${e.player}] ${e.action}`).join('\n')}` : ''}
 ${mapSummary ? `\n## Galaxy Map\nEach tile listed as pos (position index), type, and planet stats (R=resources, I=influence).\n${mapSummary}` : ''}`.trim();
 }
 
