@@ -817,6 +817,18 @@
   .strat-card-row { display: flex; gap: 5px; flex-wrap: wrap; }
   .strat-card-chip { font-family: var(--font-mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--gold); color: var(--gold); background: rgba(212,168,67,0.08); }
 
+  /* Strategy card reference panel */
+  #sc-ref-panel { border-top: 1px solid var(--border); }
+  #sc-ref-panel.hidden { display: none; }
+  .sc-ref-card { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .sc-ref-card:last-child { border-bottom: none; }
+  .sc-ref-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .sc-ref-initiative { font-family: var(--font-mono); font-size: 18px; font-weight: 700; line-height: 1; width: 20px; text-align: center; }
+  .sc-ref-name { font-family: var(--font-title); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+  .sc-ref-section { margin-bottom: 4px; }
+  .sc-ref-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); margin-bottom: 2px; }
+  .sc-ref-text { font-size: 11px; color: var(--text); line-height: 1.5; }
+
   /* ── Opponent Threat Bar ── */
   #sidebar-standings { flex-shrink: 0; border-top: 1px solid var(--border); }
   #threat-bar {
@@ -1513,6 +1525,16 @@
         </div>
       </div>
 
+      <!-- Strategy card reference panel -->
+      <div id="sc-ref-panel" class="sb-panel hidden">
+        <div class="sb-panel-hdr" onclick="togglePanel('sc-ref-panel')">
+          <span class="sb-panel-title">⬡ Strategy Cards</span>
+          <span class="sb-panel-count" id="sc-ref-count"></span>
+          <span class="sb-panel-toggle">▼</span>
+        </div>
+        <div class="sb-panel-body" id="sc-ref-body"></div>
+      </div>
+
       <!-- Hand panel: action cards, secrets, promissory notes -->
       <div class="sb-panel" id="hand-panel">
         <div class="sb-panel-hdr" onclick="togglePanel('hand-panel')">
@@ -1537,7 +1559,12 @@
         </div>
       </div>
 
-      <div id="objectives-panel">
+      <div id="sidebar-standings">
+        <div class="sidebar-section-hdr">Standings</div>
+        <div id="threat-bar"></div>
+      </div>
+
+      <div id="objectives-panel" class="expanded">
         <div id="obj-header" onclick="toggleObjectives()">
           <span id="obj-title">◈ Public Objectives</span>
           <span id="obj-count"></span>
@@ -1546,11 +1573,6 @@
         <div id="obj-body">
           <div id="obj-empty">No objectives revealed yet — they appear during Status Phase.</div>
         </div>
-      </div>
-
-      <div id="sidebar-standings">
-        <div class="sidebar-section-hdr">Standings</div>
-        <div id="threat-bar"></div>
       </div>
 
     </div>
@@ -2736,6 +2758,17 @@ function applyEvents(eventLines) {
         if (sec) sec.scored = true;
         break;
       }
+      case 'OPP_SCORE': {
+        const m = detail.match(/^(.+?)\s+scored\s+"([^"]+)"\s*\(\+(\d+)VP?\)/i);
+        if (!m) break;
+        const oppName = m[1].trim(), vps = parseInt(m[3]);
+        const opp = (currentState.opponents||[]).find(o =>
+          (o.name||'').toLowerCase().includes(oppName.toLowerCase()) ||
+          (o.faction||'').toLowerCase().includes(oppName.toLowerCase())
+        );
+        if (opp) opp.vp = (opp.vp||0) + vps;
+        break;
+      }
       case 'RESEARCH': {
         const tech = detail.replace(/^["']|["']$/g,'').trim();
         if (!p.technologies) p.technologies = [];
@@ -2880,6 +2913,37 @@ function renderFleetPanel(state) {
   stratRow.innerHTML = cards.length
     ? cards.map(c => `<span class="strat-card-chip">${c}</span>`).join('')
     : '';
+
+  // Strategy card reference panel
+  const scRefPanel = el('sc-ref-panel');
+  const scRefBody = el('sc-ref-body');
+  const scRefCount = el('sc-ref-count');
+  if (cards.length) {
+    scRefPanel.classList.remove('hidden');
+    scRefCount.textContent = cards.length;
+    scRefBody.innerHTML = cards.map(cardName => {
+      const card = STRATEGY_CARDS.find(c => c.name === cardName);
+      if (!card) return '';
+      return `<div class="sc-ref-card">
+        <div class="sc-ref-top">
+          <div class="sc-ref-initiative" style="color:${card.color}">${card.initiative}</div>
+          <div class="sc-ref-name" style="color:${card.color}">${card.name}</div>
+        </div>
+        <div class="sc-ref-section">
+          <div class="sc-ref-label">Primary</div>
+          <div class="sc-ref-text">${escapeHtml(card.primary)}</div>
+        </div>
+        <div class="sc-ref-section">
+          <div class="sc-ref-label">Secondary</div>
+          <div class="sc-ref-text">${escapeHtml(card.secondary)}</div>
+        </div>
+      </div>`;
+    }).join('');
+    // Auto-expand when cards are first dealt
+    scRefPanel.classList.add('expanded');
+  } else {
+    scRefPanel.classList.add('hidden');
+  }
 
   // Units
   el('fleet-chips').innerHTML = renderFleetChips(state.player?.units) || '<span class="hand-empty">No fleet data yet.</span>';

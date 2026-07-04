@@ -348,9 +348,12 @@ PLAY: action-card "Card Name"
 DISCARD: action-card "Card Name"
 DRAW: secret-objective "Name — condition text"
 SCORE: objective "Name" (+NVP)
+OPP_SCORE: opponent-name scored "Objective Name" (+NVP)
 RESEARCH: Technology Name
 LAW: "Name — brief effect" passed   (or repealed)
 SPEAKER: player-name
+
+Use OPP_SCORE every time an opponent scores VP (Status Phase or otherwise). Use SCORE only for Kramer's own scoring.
 
 Include every event that happened. Omit verbs with no activity. If nothing trackable happened, omit the EVENTS block entirely.
 
@@ -364,7 +367,7 @@ Only include fields that changed. Do NOT include actionCards, secretObjectives, 
 Other STATE fields:
 - player.strategyCards: update when Kramer picks strategy cards.
 - opponents[].strategyCards: update when opponents pick.
-- opponents[].vp: always update all opponents during Status Phase.
+- opponents[].vp: CRITICAL — you MUST include ALL opponents with their CURRENT total VP in every STATUS PHASE STATE block, even if a particular opponent scored 0 this round. Never omit opponents from a Status Phase STATE block.
 - speakerIndex: index into [Kramer, opp1, opp2, opp3].
 - opponentQueue: remaining opponents to act in Action Phase.
 
@@ -375,7 +378,7 @@ type is one of: "stage1", "stage2", "secret"
 scored: true when Kramer scores it
 playerProgress: short plain-language string describing how close Kramer is
 
-Always update ALL opponents' vp values in STATE during Status Phase.
+CRITICAL: At the end of every Status Phase, include ALL opponents in the STATE opponents array with their updated vp totals. Missing an opponent from this array will erase their data.
 
 ## Teaching Priorities by Phase
 
