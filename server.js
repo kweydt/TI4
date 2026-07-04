@@ -234,11 +234,11 @@ const FACTIONS = {
 
 // Opponents pool — picks 3 that don't include the player's faction
 const OPPONENT_POOL = [
-  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Antimass Deflectors', 'Sarween Tools'], tradeGoods: 3, attitude: 'neutral' },
-  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral' },
-  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], planets: ['[0.0.0]'],                     unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral' },
-  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Plasma Scoring'], tradeGoods: 2, attitude: 'neutral' },
-  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], planets: ['Archon Ren', 'Archon Tau'],     unitSummary: 'Standard Xxcha opening', technologies: ['Graviton Laser System'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'Emirates of Hacan',      name: 'Merchant-Lord Azan', vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Arretze', 'Kamdorn', 'Hercant'], unitSummary: 'Standard Hacan opening', technologies: ['Antimass Deflectors', 'Sarween Tools'], tradeGoods: 3, attitude: 'neutral' },
+  { faction: 'Universities of Jol-Nar', name: 'Archon Veth',       vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Jol', 'Nar'],                   unitSummary: 'Standard Jol-Nar opening', technologies: ['Neural Motivator', 'Sarween Tools', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'L1Z1X Mindnet',           name: 'Collective Ω',       vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['[0.0.0]'],                     unitSummary: 'Standard L1Z1X opening', technologies: ['Neural Motivator', 'Plasma Scoring'], tradeGoods: 0, attitude: 'neutral' },
+  { faction: 'Barony of Letnev',        name: 'Baron Vael',         vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Arc Prime', 'Wren Terra'],      unitSummary: 'Standard Letnev opening', technologies: ['Antimass Deflectors', 'Plasma Scoring'], tradeGoods: 2, attitude: 'neutral' },
+  { faction: 'Xxcha Kingdom',           name: 'Speaker Xxeilo',     vp: 0, strategyCards: [], commandTokens: {tactics:3,fleet:3,strategy:2}, planets: ['Archon Ren', 'Archon Tau'],     unitSummary: 'Standard Xxcha opening', technologies: ['Graviton Laser System'], tradeGoods: 0, attitude: 'neutral' },
 ];
 
 function getOpponents(playerFaction, count) {
@@ -351,12 +351,13 @@ SCORE: objective "Name" (+NVP)
 OPP_SCORE: opponent-name scored "Objective Name" (+NVP)
 USE_PRIMARY: card-name  (emit when ANY player uses a strategy card primary — Kramer or opponent)
 PASS: player-name       (emit when a player passes in the Action Phase)
+OPP_SPEND: opponent-name N tactics/fleet/strategy/trade-goods  (emit when an opponent spends command tokens or trade goods)
 RESEARCH: Technology Name
 LAW: "Name — brief effect" passed   (or repealed)
 SPEAKER: player-name
 
 Use OPP_SCORE every time an opponent scores VP (Status Phase or otherwise). Use SCORE only for Kramer's own scoring.
-Emit USE_PRIMARY whenever a strategy card primary is executed (by any player). Emit PASS whenever a player passes in the Action Phase.
+Emit USE_PRIMARY whenever a strategy card primary is executed (by any player). Emit PASS whenever a player passes in the Action Phase. Emit OPP_SPEND whenever an opponent spends command tokens or trade goods (e.g. activating a system costs 1 tactic token; using a secondary costs 1 strategy token).
 At the start of each new round (entering Strategy Phase), emit STATE with player.usedPrimaries=[], player.hasPassed=false, and opponents[].usedPrimary=null, opponents[].hasPassed=false for all opponents — this resets the action-phase tracking.
 
 Include every event that happened. Omit verbs with no activity. If nothing trackable happened, omit the EVENTS block entirely.
@@ -547,7 +548,8 @@ Your Pass Status: ${state.player?.hasPassed ? 'PASSED this round' : 'active'}
 Opponents this round:
 ${(state.opponents||[]).map(o => {
   const cards = (o.strategyCards||[]).map(c => o.usedPrimary === c ? `${c}[USED]` : c).join(', ') || 'no cards';
-  return `  ${o.name} (${o.faction||'?'}): cards=${cards} | passed=${o.hasPassed?'YES':'no'} | vp=${o.vp||0}`;
+  const ct = o.commandTokens || {tactics:3,fleet:3,strategy:2};
+  return `  ${o.name} (${o.faction||'?'}): cards=${cards} | passed=${o.hasPassed?'YES':'no'} | vp=${o.vp||0} | tokens: tac=${ct.tactics} fleet=${ct.fleet} strat=${ct.strategy} | tg=${o.tradeGoods||0}`;
 }).join('\n') || '  (none)'}
 Your Planets: ${state.player.planets.map(p => `${p.name}(${p.resources}/${p.influence},${p.ready ? 'ready' : 'exhausted'})`).join(', ')}
 Your Technologies: ${state.player.technologies.join(', ') || 'none'}

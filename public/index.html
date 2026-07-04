@@ -2724,6 +2724,25 @@ function applyEvents(eventLines) {
         if (sec) sec.scored = true;
         break;
       }
+      case 'OPP_SPEND': {
+        const ms = detail.match(/^(.+?)\s+(\d+)\s+(trade.?goods?|tactics|fleet|strategy)/i);
+        if (!ms) break;
+        const oppName = ms[1].trim(), n = parseInt(ms[2]), type = ms[3].toLowerCase();
+        const opp = (currentState.opponents||[]).find(o =>
+          (o.name||'').toLowerCase().includes(oppName.toLowerCase()) ||
+          (o.faction||'').toLowerCase().includes(oppName.toLowerCase())
+        );
+        if (opp) {
+          if (type.includes('trade')) {
+            opp.tradeGoods = Math.max(0, (opp.tradeGoods||0) - n);
+          } else {
+            if (!opp.commandTokens) opp.commandTokens = {tactics:3,fleet:3,strategy:2};
+            const key = type === 'strategy' ? 'strategy' : type === 'fleet' ? 'fleet' : 'tactics';
+            opp.commandTokens[key] = Math.max(0, (opp.commandTokens[key]||0) - n);
+          }
+        }
+        break;
+      }
       case 'OPP_SCORE': {
         const m = detail.match(/^(.+?)\s+scored\s+"([^"]+)"\s*\(\+(\d+)VP?\)/i);
         if (!m) break;
