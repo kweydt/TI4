@@ -4578,13 +4578,6 @@ function maybeShowStrategyCards() {
   if ((currentState.player?.strategyCards?.length || 0) >= 2) return; // drafted both cards (4-player game)
   if (document.querySelector('.sc-picker')) return; // already showing
   renderStrategyCardPicker();
-
-function maybeShowStrategyCards() {
-  if (!currentState) return;
-  if (currentState.phase !== 'strategy') return;
-  if ((currentState.player?.strategyCards?.length || 0) >= 2) return; // drafted both cards (4-player game)
-  if (document.querySelector('.sc-picker')) return; // already showing
-  renderStrategyCardPicker();
 }
 
 function deepMerge(target, source) {
