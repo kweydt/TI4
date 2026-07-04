@@ -495,7 +495,7 @@ function deepMerge(target, source) {
   return target;
 }
 
-function buildSystemPrompt(state) {
+function buildSystemPrompt(state, mapSummary) {
   const factionName = state.faction || 'Federation of Sol';
   return `${buildBasePrompt(factionName, state.opponents?.length || state.opponentCount)}
 
@@ -514,7 +514,8 @@ Your Promissory Notes held: ${state.player.promissoryNotes?.length ? state.playe
 Your Units: ${JSON.stringify(state.player.units)}
 Custodians Token Removed (unlocks Agenda Phase): ${state.custodiansRemoved ? 'yes' : 'no'}
 Opponent Turn Queue (Action Phase only): ${state.opponentQueue?.length ? state.opponentQueue.join(', ') : 'empty — it is Kramer\'s turn'}
-Active Laws: ${state.activeLaws?.length ? state.activeLaws.join(', ') : 'none'}`;
+Active Laws: ${state.activeLaws?.length ? state.activeLaws.join(', ') : 'none'}
+${mapSummary ? `\n## Galaxy Map\nEach tile listed as pos (position index), type, and planet stats (R=resources, I=influence).\n${mapSummary}` : ''}`.trim();
 }
 
 // ── Server ─────────────────────────────────────────────────────────────────────
@@ -527,13 +528,37 @@ app.post('/api/state/reset', (req, res) => {
   res.json({ ok: true });
 });
 
+function buildMapSummary(board) {
+  if (!board || !board.length) return null;
+  const lines = [];
+  for (const tile of board) {
+    if (tile.type === 'empty' || !tile.type) continue;
+    if (tile.type === 'mecatol') {
+      lines.push(`pos${tile.pos}: Mecatol Rex (resources:1/influence:6) [GALACTIC CENTER]`);
+      continue;
+    }
+    if (tile.type === 'home') {
+      const planets = (tile.planets||[]).map(p=>`${p.name}(${p.resources}R/${p.influence}I)`).join(', ');
+      lines.push(`pos${tile.pos}: HOME — ${tile.faction||'?'} — ${planets||'no planets'}`);
+      continue;
+    }
+    if (tile.type === 'system') {
+      const planets = (tile.planets||[]).map(p=>`${p.name}(${p.resources}R/${p.influence}I${p.trait?'/'+p.trait:''})`).join(', ');
+      const extras = [tile.anomaly && `anomaly:${tile.anomaly}`, tile.wormhole && `wormhole:${tile.wormhole}`].filter(Boolean).join(' ');
+      lines.push(`pos${tile.pos}: ${tile.name||'System'} — ${planets||'no planets'}${extras?' ['+extras+']':''}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 app.post('/api/turn', async (req, res) => {
-  const { history, state } = req.body;
+  const { history, state, board } = req.body;
   if (!history || !Array.isArray(history)) {
     return res.status(400).json({ error: 'history array required' });
   }
 
   const gameState = (state && state.player && state.player.planets) ? state : buildInitialState((state && state.faction) || 'Federation of Sol', state && state.opponentCount);
+  const mapSummary = buildMapSummary(board);
   const trimmedHistory = history.slice(-40);
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -544,7 +569,7 @@ app.post('/api/turn', async (req, res) => {
     const stream = await anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
-      system: buildSystemPrompt(gameState),
+      system: buildSystemPrompt(gameState, mapSummary),
       messages: trimmedHistory
     });
 

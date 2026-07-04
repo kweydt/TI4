@@ -4104,7 +4104,7 @@ async function sendTurn(text, silent) {
     const res = await fetch('/api/turn', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ history, state: currentState })
+      body: JSON.stringify({ history, state: currentState, board: boardState })
     });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
