@@ -3469,10 +3469,25 @@ function buildSystemTile(pos, t) {
   };
 }
 
+// Mirrors server OPPONENT_POOL order — used when currentState.opponents isn't set yet
+const CLIENT_OPPONENT_POOL = [
+  'Emirates of Hacan', 'Universities of Jol-Nar', 'L1Z1X Mindnet',
+  'Barony of Letnev', 'Xxcha Kingdom'
+];
+
 function generateMapLocally() {
   if (!_pendingGameStart) return [];
-  const { factionName } = _pendingGameStart;
-  const opponents = currentState?.opponents || [];
+  const { factionName, opponentCount } = _pendingGameStart;
+
+  // Use real opponents if state is already populated, otherwise derive from pool
+  let opponents = (currentState?.opponents || []);
+  if (!opponents.length) {
+    opponents = CLIENT_OPPONENT_POOL
+      .filter(f => f !== factionName)
+      .slice(0, opponentCount || 3)
+      .map(f => ({ faction: f, name: f }));
+  }
+
   const totalPlayers = opponents.length + 1;
   const factions = [factionName, ...opponents.map(o => o.faction || o.name)];
 
