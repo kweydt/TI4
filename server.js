@@ -601,6 +601,58 @@ Guidelines:
   }
 });
 
+// ── Sub-agent: History Summarizer ─────────────────────────────────────────────
+// Focused Haiku call — condenses old history into a compact paragraph.
+// Client calls this when history exceeds 30 entries, replaces old entries
+// with a single summary message to keep the GM's context coherent.
+app.post('/api/summarize', async (req, res) => {
+  const { history, faction, round } = req.body;
+  if (!history?.length) return res.json({ summary: '' });
+
+  const text = history.map(m => `[${m.role}]: ${typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}`).join('\n\n');
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      system: `You are summarizing a Twilight Imperium 4 game log for ${faction||'the player'} (called Kramer).
+Produce a single dense paragraph (under 120 words) covering: what rounds occurred, who scored VP and how, major combats, which strategy cards were played, and any laws passed.
+Preserve specific VP totals and planet names. Omit rules explanations. Write in past tense. No bullet points.`,
+      messages: [{ role: 'user', content: `Summarize this game history through Round ${round||'?'}:\n\n${text}` }]
+    });
+    res.json({ summary: msg.content[0]?.text || '' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Sub-agent: STATE Validator ─────────────────────────────────────────────────
+// Focused Haiku call — validates a raw STATE block, returns repaired JSON.
+// Client calls this when a STATE block fails basic schema checks before merge.
+app.post('/api/validate-state', async (req, res) => {
+  const { rawState, currentState } = req.body;
+  if (!rawState) return res.json({ valid: false, repaired: null, issues: ['empty input'] });
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      system: `You are a JSON repair assistant for a Twilight Imperium 4 game state.
+You receive a raw STATE object that may have type errors or missing fields.
+Return ONLY a JSON object with two keys:
+- "repaired": the corrected state object (fix types, coerce strings to numbers for vp/round/tradeGoods, remove unknown top-level keys)
+- "issues": array of strings describing what you fixed (empty array if nothing needed fixing)
+Known schema: round(number), phase(string), player.vp(number), player.tradeGoods(number), opponents(array with vp numbers).
+Do not invent values — only fix type errors or obviously corrupt fields. If a field is ambiguous, keep it.`,
+      messages: [{ role: 'user', content: `Current state snapshot (for reference): ${JSON.stringify({round: currentState?.round, phase: currentState?.phase, playerVp: currentState?.player?.vp})}\n\nRaw STATE to validate:\n${rawState}` }]
+    });
+    const result = JSON.parse(msg.content[0]?.text || '{}');
+    res.json({ valid: true, repaired: result.repaired || null, issues: result.issues || [] });
+  } catch (err) {
+    res.status(500).json({ valid: false, repaired: null, issues: [err.message] });
+  }
+});
+
 app.post('/api/board', async (req, res) => {
   const state = req.body.state || {};
   const faction = state.faction || 'Federation of Sol';

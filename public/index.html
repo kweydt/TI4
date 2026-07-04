@@ -787,6 +787,19 @@
   .sb-panel-body { display: none; flex-direction: column; gap: 4px; padding: 4px 12px 10px; }
   .sb-panel.expanded .sb-panel-body { display: flex; }
 
+  /* Tech Tree panel */
+  .tech-color-hdr { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 0 2px; border-bottom: 1px solid var(--border); margin-top: 4px; }
+  .tech-row { display: flex; align-items: center; gap: 5px; padding: 3px 0; font-family: var(--font-body); font-size: 11px; min-height: 22px; border-left: 2px solid transparent; padding-left: 4px; }
+  .tech-row.owned { color: var(--dim); }
+  .tech-row.researchable { color: var(--text); }
+  .tech-row.researchable.blue  { border-left-color: #4a9eff; }
+  .tech-row.researchable.green { border-left-color: #4aff9e; }
+  .tech-row.researchable.yellow{ border-left-color: #ffd54a; }
+  .tech-row.researchable.red   { border-left-color: #ff6b6b; }
+  .tech-row.locked { color: var(--dim); opacity: 0.5; }
+  .tech-prereq { font-family: var(--font-mono); font-size: 9px; flex-shrink: 0; }
+  .tech-check { font-size: 9px; margin-left: auto; flex-shrink: 0; }
+
   /* Fleet display */
   .fleet-row { display: flex; flex-wrap: wrap; gap: 5px; }
   .fleet-chip { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); color: var(--dim); }
@@ -1487,6 +1500,7 @@
           <div id="faction-badge">FEDERATION OF SOL</div>
           <div id="round-badge">ROUND 1</div>
           <div class="header-btns">
+            <button id="rewind-btn" class="hidden" onclick="openRewindMenu()" title="Restore a saved checkpoint">⏪ Rewind</button>
             <button id="new-game-btn">↺ New Game</button>
             <button id="map-btn" onclick="openMapModal()">⬡ MAP</button>
             <button id="ref-btn">📋 REF</button>
@@ -1557,6 +1571,15 @@
         <div class="sb-panel-body" id="laws-body">
           <div class="hand-empty">No laws in effect.</div>
         </div>
+      </div>
+
+      <div class="sb-panel" id="tech-panel">
+        <div class="sb-panel-hdr" onclick="togglePanel('tech-panel')">
+          <span class="sb-panel-title">🔬 Tech Tree</span>
+          <span class="sb-panel-count" id="tech-count"></span>
+          <span class="sb-panel-toggle">▼</span>
+        </div>
+        <div class="sb-panel-body" id="tech-body"></div>
       </div>
 
       <div id="sidebar-standings">
@@ -3083,6 +3106,107 @@ function renderLawsPanel(laws) {
   if (count > 0) document.getElementById('laws-panel').classList.add('expanded');
 }
 
+const TECH_TREE = [
+  // Blue — Propulsion
+  { name:'Antimass Deflectors',      color:'blue',   prereqs:0 },
+  { name:'Neural Motivator',         color:'blue',   prereqs:0 },
+  { name:'Gravity Drive',            color:'blue',   prereqs:1 },
+  { name:'Fleet Logistics',          color:'blue',   prereqs:2 },
+  { name:'Light-Wave Deflector',     color:'blue',   prereqs:3 },
+  // Green — Biotic
+  { name:'Psychoarchaeology',        color:'green',  prereqs:0 },
+  { name:'Dacxive Animators',        color:'green',  prereqs:1 },
+  { name:'Hyper Metabolism',         color:'green',  prereqs:2 },
+  { name:'X-89 Bacterial Weapon',    color:'green',  prereqs:2 },
+  // Yellow — Cybernetic
+  { name:'Sarween Tools',            color:'yellow', prereqs:0 },
+  { name:'Scanlink Drone Network',   color:'yellow', prereqs:0 },
+  { name:'AI Development Algorithm', color:'yellow', prereqs:1 },
+  { name:'Duranium Armor',           color:'yellow', prereqs:2 },
+  { name:'Integrated Economy',       color:'yellow', prereqs:2 },
+  // Red — Warfare
+  { name:'Plasma Scoring',           color:'red',    prereqs:0 },
+  { name:'Magen Defense Grid',       color:'red',    prereqs:0 },
+  { name:'Assault Cannon',           color:'red',    prereqs:3 },
+  // Unit upgrades
+  { name:'Infantry II',    color:'green',  prereqs:1, upgrade:true, prereqColors:['green','yellow'] },
+  { name:'Fighter II',     color:'blue',   prereqs:1, upgrade:true, prereqColors:['blue','yellow'] },
+  { name:'Destroyer II',   color:'red',    prereqs:1, upgrade:true, prereqColors:['blue','red'] },
+  { name:'Cruiser II',     color:'blue',   prereqs:1, upgrade:true, prereqColors:['blue','yellow'] },
+  { name:'Carrier II',     color:'blue',   prereqs:1, upgrade:true, prereqColors:['blue','green'] },
+  { name:'Dreadnought II', color:'blue',   prereqs:1, upgrade:true, prereqColors:['blue','red'] },
+  { name:'PDS II',         color:'yellow', prereqs:1, upgrade:true, prereqColors:['yellow','red'] },
+  { name:'Space Dock II',  color:'yellow', prereqs:1, upgrade:true, prereqColors:['blue','yellow'] },
+  { name:'War Sun',        color:'red',    prereqs:4, upgrade:true, prereqColors:['red','red','red','red'] },
+];
+
+const TECH_COLOR_HEX = { blue:'#4a9eff', green:'#4aff9e', yellow:'#ffd54a', red:'#ff6b6b' };
+const TECH_COLOR_LABEL = { blue:'Blue — Propulsion', green:'Green — Biotic', yellow:'Yellow — Cybernetic', red:'Red — Warfare' };
+
+function renderTechPanel(state) {
+  const owned = new Set((state?.player?.technologies || []).map(t => t.trim()));
+  const countByColor = { blue:0, green:0, yellow:0, red:0 };
+  for (const t of TECH_TREE) {
+    if (!t.upgrade && owned.has(t.name)) countByColor[t.color]++;
+  }
+  // Also count upgrades toward their primary color for prereq checks? No — upgrades use prereqColors.
+  // Count all owned techs by color (including upgrades) for prereq calculation
+  const ownedByColor = { blue:0, green:0, yellow:0, red:0 };
+  for (const t of TECH_TREE) {
+    if (owned.has(t.name)) ownedByColor[t.color]++;
+  }
+
+  function isResearchable(t) {
+    if (owned.has(t.name)) return false;
+    if (t.prereqColors) {
+      // count how many of each color we have owned, then check we can satisfy the array
+      const need = {};
+      for (const c of t.prereqColors) need[c] = (need[c]||0) + 1;
+      for (const [c, n] of Object.entries(need)) {
+        if ((ownedByColor[c]||0) < n) return false;
+      }
+      return true;
+    }
+    return (ownedByColor[t.color]||0) >= t.prereqs;
+  }
+
+  function prereqDots(t) {
+    if (t.prereqs === 0) return '';
+    if (t.prereqColors) {
+      return t.prereqColors.map(c => `<span style="color:${TECH_COLOR_HEX[c]}">●</span>`).join('');
+    }
+    return `<span style="color:${TECH_COLOR_HEX[t.color]}">${'●'.repeat(t.prereqs)}</span>`;
+  }
+
+  function techRow(t) {
+    const isOwned = owned.has(t.name);
+    const researchable = isResearchable(t);
+    let cls = 'tech-row';
+    if (isOwned) cls += ' owned';
+    else if (researchable) cls += ' researchable ' + t.color;
+    else cls += ' locked';
+    const check = isOwned ? '<span class="tech-check">✓</span>' : '';
+    const dots = prereqDots(t);
+    const prereqSpan = dots ? `<span class="tech-prereq">${dots}</span>` : '';
+    return `<div class="${cls}">${prereqSpan}<span>${escapeHtml(t.name)}</span>${check}</div>`;
+  }
+
+  const groups = ['blue','green','yellow','red'];
+  let html = '';
+  for (const color of groups) {
+    const techs = TECH_TREE.filter(t => !t.upgrade && t.color === color);
+    html += `<div class="tech-color-hdr" style="color:${TECH_COLOR_HEX[color]}">${TECH_COLOR_LABEL[color]}</div>`;
+    html += techs.map(techRow).join('');
+  }
+  const upgrades = TECH_TREE.filter(t => t.upgrade);
+  html += `<div class="tech-color-hdr" style="color:var(--dim)">Unit Upgrades</div>`;
+  html += upgrades.map(techRow).join('');
+
+  const totalOwned = TECH_TREE.filter(t => owned.has(t.name)).length;
+  el('tech-count').textContent = totalOwned ? `(${totalOwned}/${TECH_TREE.length})` : '';
+  el('tech-body').innerHTML = html;
+}
+
 function applyStateToUI(state) {
   if (!state) return;
   if (state.round) el('round-badge').textContent = `ROUND ${state.round}`;
@@ -3103,6 +3227,7 @@ function applyStateToUI(state) {
   renderFleetPanel(state);
   renderHandPanel(state);
   renderLawsPanel(state.activeLaws);
+  renderTechPanel(state);
   updateThreatBar();
 }
 
@@ -4261,11 +4386,19 @@ function finalizeStream(fullText) {
       ['actionCards','secretObjectives','promissoryNotes','technologies','activeLaws'].forEach(k => {
         if (updates.player?.[k] && eventLines.length) delete updates.player[k];
       });
+      // Validate before merge — coerces type errors, blocks opponent erasure
+      validateAndCleanState(updates, currentState);
+      // Snapshot at Status Phase entry (before merge so we capture end-of-action state)
+      if (updates.phase === 'status' && currentState.phase !== 'status') {
+        saveSnapshot(`Round ${currentState.round} — end of Action Phase`);
+      }
       deepMerge(currentState, updates);
       applyStateToUI(currentState);
       saveLocalState();
     } catch(e) { console.warn('State parse failed:', e); }
   }
+  // Condense old history in the background if it's grown too long
+  maybeSummarizeHistory();
   // no-op: board is now generated before the game starts
   const sections = parseResponse(fullText);
   if (!sections.gm && !sections.coach && !sections.opponents) {
@@ -4598,10 +4731,163 @@ el('input-area').addEventListener('keydown', function(e) {
 
 buildFactionList();
 buildGlossary();
+renderSnapshotBtn();
 
 function saveLocalState() {
   if (currentState) localStorage.setItem('ti4_state', JSON.stringify(currentState));
   if (boardState.length) localStorage.setItem('ti4_board', JSON.stringify(boardState));
+}
+
+// ── Snapshots ─────────────────────────────────────────────────────────────────
+const MAX_SNAPSHOTS = 6;
+
+function saveSnapshot(label) {
+  if (!currentState) return;
+  const snapshots = JSON.parse(localStorage.getItem('ti4_snapshots') || '[]');
+  snapshots.push({
+    label: label || `Round ${currentState.round} — ${currentState.phase}`,
+    ts: Date.now(),
+    state: JSON.parse(JSON.stringify(currentState)),
+    board: JSON.parse(JSON.stringify(boardState))
+  });
+  if (snapshots.length > MAX_SNAPSHOTS) snapshots.splice(0, snapshots.length - MAX_SNAPSHOTS);
+  localStorage.setItem('ti4_snapshots', JSON.stringify(snapshots));
+  renderSnapshotBtn();
+}
+
+function renderSnapshotBtn() {
+  const btn = document.getElementById('rewind-btn');
+  if (!btn) return;
+  const snapshots = JSON.parse(localStorage.getItem('ti4_snapshots') || '[]');
+  btn.classList.toggle('hidden', !snapshots.length);
+}
+
+function openRewindMenu() {
+  const snapshots = JSON.parse(localStorage.getItem('ti4_snapshots') || '[]');
+  if (!snapshots.length) return;
+  document.getElementById('rewind-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'rewind-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  const rows = snapshots.slice().reverse().map((s, i) => {
+    const ri = snapshots.length - 1 - i;
+    const ago = Math.round((Date.now() - s.ts) / 60000);
+    return `<div style="padding:10px;border:1px solid var(--border);border-radius:4px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="restoreSnapshot(${ri})">
+      <div><div style="font-size:12px;color:var(--text);">${escapeHtml(s.label)}</div>
+      <div style="font-size:10px;color:var(--dim);">${ago < 2 ? 'just now' : ago + 'm ago'}</div></div>
+      <div style="font-size:10px;color:var(--gold);">RESTORE ›</div></div>`;
+  }).join('');
+  modal.innerHTML = `<div style="background:var(--bg);border:1px solid var(--gold);border-radius:6px;padding:20px;min-width:320px;max-width:480px;">
+    <div style="font-family:var(--font-title);color:var(--gold);font-size:11px;letter-spacing:0.1em;margin-bottom:14px;">REWIND TO CHECKPOINT</div>
+    ${rows}
+    <div style="text-align:right;margin-top:6px;"><button onclick="document.getElementById('rewind-modal').remove()" style="background:none;border:1px solid var(--border);color:var(--dim);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:11px;">Cancel</button></div>
+  </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function restoreSnapshot(idx) {
+  const snapshots = JSON.parse(localStorage.getItem('ti4_snapshots') || '[]');
+  const snap = snapshots[idx];
+  if (!snap) return;
+  document.getElementById('rewind-modal')?.remove();
+  currentState = snap.state;
+  boardState = [];
+  if (snap.board?.length) applyBoardDelta(snap.board);
+  history = [];
+  saveLocalState();
+  applyStateToUI(currentState);
+  addEntry('gm', 'GAME MASTER', '⬡', formatMarkdown(`State restored to **${escapeHtml(snap.label)}**. History cleared — tell me what you'd like to do next.`));
+}
+
+// ── STATE Schema Validation ───────────────────────────────────────────────────
+const STATE_SCHEMA = {
+  round:   { type: 'number', min: 1, max: 20 },
+  phase:   { type: 'string', values: ['strategy','action','status','agenda'] },
+  'player.vp':                     { type: 'number', min: 0, max: 10 },
+  'player.tradeGoods':             { type: 'number', min: 0, max: 50 },
+  'player.commandTokens.tactics':  { type: 'number', min: 0, max: 16 },
+  'player.commandTokens.fleet':    { type: 'number', min: 0, max: 16 },
+  'player.commandTokens.strategy': { type: 'number', min: 0, max: 8 },
+};
+
+function getNestedVal(obj, path) {
+  return path.split('.').reduce((o, k) => o?.[k], obj);
+}
+
+function validateAndCleanState(updates, current) {
+  const issues = [];
+  for (const [path, rule] of Object.entries(STATE_SCHEMA)) {
+    const val = getNestedVal(updates, path);
+    if (val === undefined) continue;
+    if (rule.type === 'number') {
+      if (typeof val !== 'number' || isNaN(val)) {
+        const coerced = Number(val);
+        if (!isNaN(coerced)) {
+          // Coerce string number to actual number
+          const parts = path.split('.');
+          let obj = updates;
+          for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+          obj[parts[parts.length - 1]] = coerced;
+          issues.push(`${path}: coerced "${val}" → ${coerced}`);
+        } else {
+          issues.push(`${path}: dropping invalid value ${JSON.stringify(val)}`);
+          const parts = path.split('.');
+          let obj = updates;
+          for (let i = 0; i < parts.length - 1; i++) obj = obj?.[parts[i]];
+          if (obj) delete obj[parts[parts.length - 1]];
+        }
+      } else {
+        if (rule.min !== undefined && val < rule.min) issues.push(`${path}: ${val} below min ${rule.min}`);
+        if (rule.max !== undefined && val > rule.max) issues.push(`${path}: ${val} above max ${rule.max}`);
+      }
+    }
+    if (rule.type === 'string' && rule.values) {
+      if (!rule.values.includes(val)) {
+        issues.push(`${path}: invalid "${val}" — dropping`);
+        delete updates[path.split('.')[0]]; // drop top-level key if nested is bad
+      }
+    }
+  }
+  // Guard: opponents array must not shrink — would erase VP data
+  if (updates.opponents && Array.isArray(updates.opponents) && current?.opponents) {
+    if (updates.opponents.length < current.opponents.length) {
+      issues.push(`opponents shrank ${current.opponents.length}→${updates.opponents.length} — BLOCKED`);
+      delete updates.opponents;
+    }
+  }
+  if (issues.length) console.warn('[STATE validation]', issues);
+  return issues;
+}
+
+// ── History Summarization ─────────────────────────────────────────────────────
+const HISTORY_SUMMARIZE_AT = 32;
+const HISTORY_KEEP_RECENT = 14;
+let _summarizing = false;
+
+async function maybeSummarizeHistory() {
+  if (_summarizing || history.length < HISTORY_SUMMARIZE_AT) return;
+  _summarizing = true;
+  const toSummarize = history.slice(0, history.length - HISTORY_KEEP_RECENT);
+  const recent = history.slice(history.length - HISTORY_KEEP_RECENT);
+  try {
+    const res = await fetch('/api/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: toSummarize, faction: currentState?.faction, round: currentState?.round })
+    });
+    if (res.ok) {
+      const { summary } = await res.json();
+      if (summary) {
+        history = [
+          { role: 'assistant', content: `[GAME SUMMARY — prior to Round ${currentState?.round}]\n${summary}` },
+          ...recent
+        ];
+        console.log(`[History] Condensed ${toSummarize.length} entries → 1 summary + ${recent.length} recent`);
+      }
+    }
+  } catch (e) { console.warn('[History] Summarization failed:', e); }
+  finally { _summarizing = false; }
 }
 
 // Saved-game resume — inline banner instead of confirm()
