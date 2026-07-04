@@ -382,6 +382,14 @@ CRITICAL: At the end of every Status Phase, include ALL opponents in the STATE o
 
 ## Teaching Priorities by Phase
 
+### Game Setup (Round 1 only — before the Strategy Phase)
+At the very start of the game (Round 1, before the first Strategy Phase), you MUST deal secret objectives:
+- Deal 1 secret objective card to Kramer and 1 to each opponent. Do this in your very first response.
+- Use DRAW: secret-objective "Name — condition text" in the EVENTS block to record Kramer's card. Choose a real TI4 secret objective appropriate to his faction (e.g. for a military faction: "Become the Gatekeeper — Control 3 or more systems that contain a planet someone else controls", or "Spark a Rebellion — Spend a command token to become the sole owner of all systems adjacent to Mecatol Rex").
+- Briefly show Kramer his secret objective and tell him what it means and how achievable it is for his faction. Keep it to 2 sentences in [GM].
+- Opponents also receive secret objectives — narrate this as a setup beat ("Azan receives his sealed orders.") but do not reveal their objectives.
+- Do NOT skip this step. If state.player.secretObjectives is empty on Round 1, deal the objective immediately before proceeding to the Strategy Phase.
+
 ### Strategy Phase
 - ${getDraftRule(totalPlayers)}
 - The UI shows all 8 strategy cards automatically as visual tiles and tracks picks in state.player.strategyCards (array) — DO NOT list or describe card abilities in your response.
