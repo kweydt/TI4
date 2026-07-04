@@ -4356,15 +4356,17 @@ function updateStreamEntry(text) {
   scrollToBottom(false);
 }
 
-function finalizeStream(fullText) {
+async function finalizeStream(fullText) {
   hideStreamStatus();
   if (streamingEntry) { streamingEntry.remove(); streamingEntry = null; }
+
   // Apply events first (B-side: fine-grained state from LLM narration)
   const eventLines = parseEvents(fullText);
   if (eventLines.length) {
     applyEvents(eventLines);
     renderEventReceipt(eventLines);
   }
+
   // Append to round action log
   if (currentState && eventLines.length) {
     if (!currentState.roundLog) currentState.roundLog = [];
@@ -4375,31 +4377,67 @@ function finalizeStream(fullText) {
     currentState.roundLog.push({ player: actor, action: summary, round: currentState.round });
     if (currentState.roundLog.length > 30) currentState.roundLog = currentState.roundLog.slice(-30);
   }
-  // Then apply STATE block for high-level fields (round, phase, opponent VP, objectives)
+
+  // Apply STATE block
   const stateMatch = fullText.match(/<!--STATE:([\s\S]*?)-->/);
+  let stateApplied = false;
   if (stateMatch) {
     try {
       const updates = JSON.parse(stateMatch[1]);
       if (!currentState) currentState = {};
       if (updates.board) { applyBoardDelta(updates.board); delete updates.board; }
-      // Don't let STATE overwrite fine-grained fields that events already handled
       ['actionCards','secretObjectives','promissoryNotes','technologies','activeLaws'].forEach(k => {
         if (updates.player?.[k] && eventLines.length) delete updates.player[k];
       });
-      // Validate before merge — coerces type errors, blocks opponent erasure
-      validateAndCleanState(updates, currentState);
-      // Snapshot at Status Phase entry (before merge so we capture end-of-action state)
+
+      // Validate & repair — coerces types, blocks opponent erasure
+      const issues = validateAndCleanState(updates, currentState);
+      if (issues.length) {
+        // Fire-and-forget Haiku repair for any schema violations found
+        fetch('/api/validate-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rawState: JSON.stringify(updates), currentState })
+        }).then(r => r.ok ? r.json() : null).then(result => {
+          if (result?.repaired) {
+            deepMerge(currentState, result.repaired);
+            applyStateToUI(currentState);
+            saveLocalState();
+            if (result.issues?.length) console.warn('[STATE repair]', result.issues);
+          }
+        }).catch(() => {});
+      }
+
+      // Scoring verifier — runs before VP is applied at Status Phase entry
       if (updates.phase === 'status' && currentState.phase !== 'status') {
         saveSnapshot(`Round ${currentState.round} — end of Action Phase`);
+        const scoreClaims = eventLines
+          .filter(l => /^SCORE:/i.test(l))
+          .map(l => {
+            const m = l.match(/"([^"]+)"\s*\(\+\d+VP?\)/i);
+            const obj = currentState.publicObjectives?.find(o => o.name === m?.[1]);
+            return m ? { name: m[1], condition: obj?.condition || '' } : null;
+          }).filter(Boolean);
+        if (scoreClaims.length) {
+          verifyScoring(scoreClaims, currentState.player, currentState.round);
+        }
       }
+
       deepMerge(currentState, updates);
       applyStateToUI(currentState);
       saveLocalState();
+      stateApplied = true;
     } catch(e) { console.warn('State parse failed:', e); }
   }
-  // Condense old history in the background if it's grown too long
+
+  // Fallback extractor: if no EVENTS and no valid STATE block, ask Haiku to extract
+  if (!eventLines.length && !stateApplied && fullText.length > 200) {
+    extractStateFallback(fullText);
+  }
+
+  // Condense old history in the background
   maybeSummarizeHistory();
-  // no-op: board is now generated before the game starts
+
   const sections = parseResponse(fullText);
   if (!sections.gm && !sections.coach && !sections.opponents) {
     const clean = fullText.replace(/<!--STATE:[\s\S]*?-->/g, '').trim();
@@ -4407,9 +4445,139 @@ function finalizeStream(fullText) {
   } else {
     renderSections(sections);
   }
-  // Auto-show strategy card picker whenever player is in strategy phase and hasn't picked
+
   maybeShowStrategyCards();
+
+  // Auto-process any remaining opponent queue with sub-agents
+  if (currentState?.opponentQueue?.length > 0 && currentState.phase === 'action') {
+    processOpponentQueue();
+  }
 }
+
+// ── Sub-agent: Opponent Queue Auto-Processor ──────────────────────────────────
+let _processingQueue = false;
+
+async function processOpponentQueue() {
+  if (_processingQueue) return;
+  if (!currentState?.opponentQueue?.length) return;
+  _processingQueue = true;
+
+  while (currentState.opponentQueue?.length > 0) {
+    const oppName = currentState.opponentQueue[0];
+    const opp = (currentState.opponents || []).find(o =>
+      (o.name || '').toLowerCase().includes(oppName.toLowerCase()) ||
+      (o.faction || '').toLowerCase().includes(oppName.toLowerCase())
+    );
+    if (!opp) { currentState.opponentQueue.shift(); continue; }
+
+    setStreamStatus('◆', `${opp.name} is deciding...`);
+
+    try {
+      const res = await fetch('/api/opponent-turn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          opponent: opp,
+          gameState: {
+            round: currentState.round,
+            phase: currentState.phase,
+            opponents: currentState.opponents,
+            publicObjectives: currentState.publicObjectives,
+            playerVp: currentState.player?.vp,
+            playerPassed: currentState.player?.hasPassed,
+            playerCards: currentState.player?.strategyCards
+          }
+        })
+      });
+
+      if (res.ok) {
+        const decision = await res.json();
+
+        // Render opponent action in the log
+        addEntry('opponents', `${opp.name} (${opp.faction})`, '◆',
+          formatMarkdown(decision.narrative || decision.action || '(no action)'));
+
+        // Apply events
+        if (decision.events?.length) {
+          applyEvents(decision.events);
+          renderEventReceipt(decision.events);
+        }
+
+        // Update intent if changed
+        if (decision.intentUpdate) {
+          opp.intent = decision.intentUpdate;
+        }
+
+        // Append to round log
+        if (currentState.roundLog) {
+          currentState.roundLog.push({
+            player: opp.name, action: decision.action || 'took an action', round: currentState.round
+          });
+        }
+      }
+    } catch(e) { console.warn(`[Opponent turn] ${oppName} failed:`, e); }
+
+    // Remove from queue regardless of success
+    currentState.opponentQueue = (currentState.opponentQueue || []).filter(n => n !== oppName);
+    saveLocalState();
+    await new Promise(r => setTimeout(r, 350));
+  }
+
+  hideStreamStatus();
+  _processingQueue = false;
+
+  // Queue cleared — silently prompt GM for Kramer's turn options
+  await sendTurn('[System: All opponents have completed their turns. Present Kramer\'s options in [CHOICES].]', true);
+}
+
+// ── Sub-agent: Scoring Verifier ───────────────────────────────────────────────
+async function verifyScoring(claims, playerState, round) {
+  try {
+    const res = await fetch('/api/verify-scoring', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ claimed: claims, playerState, round })
+    });
+    if (!res.ok) return;
+    const { verified } = await res.json();
+    const invalid = (verified || []).filter(v => !v.valid);
+    if (invalid.length) {
+      const msg = invalid.map(v => `**${v.name}**: ${v.reason}`).join('\n');
+      addEntry('gm', 'SCORING ALERT', '⚠',
+        formatMarkdown(`The following scoring claims may be invalid:\n${msg}\n\nPlease review before confirming VP.`));
+    }
+  } catch(e) { /* non-critical */ }
+}
+
+// ── Sub-agent: State Extractor Fallback ───────────────────────────────────────
+async function extractStateFallback(narrative) {
+  try {
+    const res = await fetch('/api/extract-state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ narrative, currentState })
+    });
+    if (!res.ok) return;
+    const { events, state } = await res.json();
+    if (events?.length) {
+      applyEvents(events);
+      renderEventReceipt(events);
+    }
+    if (state && currentState) {
+      validateAndCleanState(state, currentState);
+      deepMerge(currentState, state);
+      applyStateToUI(currentState);
+      saveLocalState();
+    }
+  } catch(e) { /* non-critical fallback */ }
+}
+
+function maybeShowStrategyCards() {
+  if (!currentState) return;
+  if (currentState.phase !== 'strategy') return;
+  if ((currentState.player?.strategyCards?.length || 0) >= 2) return; // drafted both cards (4-player game)
+  if (document.querySelector('.sc-picker')) return; // already showing
+  renderStrategyCardPicker();
 
 function maybeShowStrategyCards() {
   if (!currentState) return;

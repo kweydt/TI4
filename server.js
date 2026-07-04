@@ -601,6 +601,134 @@ Guidelines:
   }
 });
 
+// ── Sub-agent: Opponent Turn ───────────────────────────────────────────────────
+// Focused Haiku call — decides one opponent's action and returns structured JSON.
+// Client calls this for every entry in opponentQueue instead of burning a full
+// Sonnet turn on a "Continue — let X go" round-trip.
+app.post('/api/opponent-turn', async (req, res) => {
+  const { opponent, gameState } = req.body;
+  if (!opponent) return res.status(400).json({ error: 'opponent required' });
+
+  const { round, phase, opponents, publicObjectives, playerVp, playerPassed, playerCards } = gameState || {};
+  const ct = opponent.commandTokens || { tactics: 3, fleet: 3, strategy: 2 };
+  const cards = (opponent.strategyCards || [])
+    .map(c => opponent.usedPrimary === c ? `${c}[USED]` : `${c}[available]`).join(', ') || 'no cards';
+  const planets = (opponent.planets || [])
+    .map(p => typeof p === 'string' ? p : `${p.name}(${p.res}R/${p.inf}I)`).join(', ') || 'none';
+  const others = (opponents || []).filter(o => o.name !== opponent.name)
+    .map(o => `  ${o.name}: ${o.vp}VP passed=${o.hasPassed ? 'YES' : 'no'}`).join('\n') || '  (none)';
+  const objs = (publicObjectives || []).map(o => o.name).join(', ') || 'none revealed';
+
+  const systemPrompt = `You are simulating ${opponent.name} (${opponent.faction}) in Twilight Imperium 4, Round ${round||'?'}, Action Phase.
+Choose ONE action that serves their intent. Be decisive and consistent with their faction's playstyle.
+
+${opponent.name}'s state:
+  Cards: ${cards}
+  VP: ${opponent.vp||0} | Trade goods: ${opponent.tradeGoods||0}
+  Tokens — tactics:${ct.tactics} fleet:${ct.fleet} strat:${ct.strategy}
+  Planets: ${planets}
+  Intent: ${opponent.intent || '(no intent set)'}
+
+Other players:
+  Kramer (player): ${playerVp||0}VP passed=${playerPassed?'YES':'no'} cards=${(playerCards||[]).join('/')||'none'}
+${others}
+
+Public objectives: ${objs}
+
+Action options:
+  - Tactical (spend 1 tactics token to activate a system)
+  - Strategic (play an [available] strategy card primary — costs 0 tokens)
+  - Pass (only if they have used all available card primaries or choose to)
+
+Respond ONLY with this exact JSON — no markdown fences, no extra keys:
+{"action":"one-line summary","narrative":"1-3 sentences of vivid in-world narration","events":["VERB: detail"],"intentUpdate":null}
+
+Event verb rules (emit only what actually happened):
+  OPP_SPEND: Name N tactics/fleet/strategy/trade-goods
+  USE_PRIMARY: Card Name
+  PASS: Name
+  CAPTURE: Name planet-name
+  INTENT: Name "new plan under 14 words"
+Set intentUpdate to a new plan string if their strategy meaningfully shifted, else null.`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: `Decide ${opponent.name}'s next action.` }]
+    });
+    const raw = msg.content[0]?.text || '{}';
+    const decision = JSON.parse(raw);
+    res.json(decision);
+  } catch (err) {
+    console.error('Opponent turn error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Sub-agent: State Extractor ─────────────────────────────────────────────────
+// Fallback Haiku call — extracts EVENTS+STATE from GM narrative when the blocks
+// are missing or malformed. Client calls this only when parsing fails.
+app.post('/api/extract-state', async (req, res) => {
+  const { narrative, currentState } = req.body;
+  if (!narrative) return res.json({ events: [], state: null });
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      system: `Extract structured game state changes from this TI4 GM narrative.
+Return ONLY this JSON (no markdown):
+{"events":["VERB: detail",...],"state":{/*only changed fields*/}}
+
+Event verbs: SPEND BUILD COMBAT EXHAUST READY DRAW PLAY DISCARD SCORE OPP_SCORE OPP_SPEND USE_PRIMARY PASS RESEARCH CAPTURE LOSE_PLANET OPP_FLEET INTENT LAW SPEAKER
+Only include events you're confident about. Prefer fewer correct events over many guessed ones.
+For state: only include fields that changed — common: round, phase, opponentQueue, player.vp, player.tradeGoods, opponents[].vp`,
+      messages: [{ role: 'user', content: `Current state: round=${currentState?.round} phase=${currentState?.phase} playerVp=${currentState?.player?.vp}\n\nNarrative:\n${narrative.slice(0, 3000)}` }]
+    });
+    const result = JSON.parse(msg.content[0]?.text || '{"events":[],"state":null}');
+    res.json(result);
+  } catch (err) {
+    res.json({ events: [], state: null });
+  }
+});
+
+// ── Sub-agent: Scoring Verifier ────────────────────────────────────────────────
+// Focused Haiku call — checks claimed VP scoring against actual player state
+// before the Status Phase STATE block is merged. Blocks invalid claims.
+app.post('/api/verify-scoring', async (req, res) => {
+  const { claimed, playerState, round } = req.body;
+  if (!claimed?.length) return res.json({ verified: [] });
+
+  const techs = (playerState?.technologies || []).join(', ') || 'none';
+  const planets = (playerState?.planets || []).map(p => `${p.name}(${p.ready?'ready':'exhausted'})`).join(', ') || 'none';
+  const units = JSON.stringify(playerState?.units || {});
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      system: `You are verifying TI4 scoring claims at end of Round ${round||'?'}.
+Player state:
+  Technologies: ${techs}
+  Planets controlled: ${planets}
+  Units: ${units}
+  VP before scoring: ${playerState?.vp||0}
+
+For each claimed objective, determine if the scoring condition is plausibly met given the state.
+Err toward valid unless the state clearly contradicts the condition.
+Return ONLY this JSON:
+{"verified":[{"name":"Objective Name","valid":true,"reason":"brief"}]}`,
+      messages: [{ role: 'user', content: `Verify these scoring claims:\n${claimed.map(c => `- ${c.name}: ${c.condition}`).join('\n')}` }]
+    });
+    const result = JSON.parse(msg.content[0]?.text || '{"verified":[]}');
+    res.json(result);
+  } catch (err) {
+    res.json({ verified: claimed.map(c => ({ name: c.name, valid: true, reason: 'verification unavailable' })) });
+  }
+});
+
 // ── Sub-agent: History Summarizer ─────────────────────────────────────────────
 // Focused Haiku call — condenses old history into a compact paragraph.
 // Client calls this when history exceeds 30 entries, replaces old entries
