@@ -544,7 +544,7 @@ function buildMapSummary(board) {
     }
     if (tile.type === 'system') {
       const planets = (tile.planets||[]).map(p=>`${p.name}(${p.resources}R/${p.influence}I${p.trait?'/'+p.trait:''})`).join(', ');
-      const extras = [tile.anomaly && `anomaly:${tile.anomaly}`, tile.wormhole && `wormhole:${tile.wormhole}`].filter(Boolean).join(' ');
+      const extras = [tile.anomaly && `anomaly:${tile.anomaly}`, tile.wh && `wormhole:${tile.wh}`].filter(Boolean).join(' ');
       lines.push(`pos${tile.pos}: ${tile.name||'System'} — ${planets||'no planets'}${extras?' ['+extras+']':''}`);
     }
   }

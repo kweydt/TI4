@@ -2417,65 +2417,31 @@ async function generateMapThenStart() {
   const bar = el('map-loading-bar');
   const status = el('map-loading-status');
 
-  // Animate progress bar while waiting
-  bar.style.width = '15%';
-  let attempt = 0;
+  bar.style.width = '30%';
+  status.textContent = 'Charting the galaxy…';
 
-  async function tryGenerate() {
-    attempt++;
-    status.textContent = attempt > 1 ? `Retrying… (attempt ${attempt})` : 'Generating star systems…';
-    bar.style.width = (attempt === 1 ? '15' : '55') + '%';
+  await new Promise(r => setTimeout(r, 80)); // let paint happen
 
-    try {
-      const res = await fetch('/api/board', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: currentState })
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Server ${res.status}: ${txt}`);
-      }
-      // Read streamed plain-text response (server pipes chunks to keep connection alive)
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value, { stream: true });
-      }
-      const arrayMatch = fullText.match(/\[[\s\S]*\]/);
-      if (!arrayMatch) throw new Error('No board data in response');
-      const board = JSON.parse(arrayMatch[0]);
-      if (!board.length) throw new Error('Empty board returned');
+  try {
+    const board = generateMapLocally();
+    if (!board.length) throw new Error('Map generation returned empty board');
 
-      if (bar) bar.style.width = '85%';
-      if (status) status.textContent = 'Placing factions…';
-      applyBoardDelta(board);
-      saveLocalState();
+    bar.style.width = '80%';
+    status.textContent = 'Placing factions…';
+    applyBoardDelta(board);
+    saveLocalState();
 
-      if (bar) bar.style.width = '100%';
-      await new Promise(r => setTimeout(r, 300));
+    bar.style.width = '100%';
+    await new Promise(r => setTimeout(r, 200));
 
-      if (_pendingGameStart) enterGame();
-    } catch (e) {
-      console.error('Map generation failed:', e);
-      if (attempt < 3) {
-        status.textContent = `Attempt ${attempt} failed, retrying…`;
-        bar.style.width = '40%';
-        await new Promise(r => setTimeout(r, 1500));
-        return tryGenerate();
-      }
-      // All retries failed
-      el('map-loading-status').textContent = 'Map generation failed.';
-      el('map-loading-error').textContent = e.message;
-      el('map-loading-error').classList.remove('hidden');
-      el('map-loading-retry').classList.remove('hidden');
-    }
+    if (_pendingGameStart) enterGame();
+  } catch (e) {
+    console.error('Map generation failed:', e);
+    el('map-loading-status').textContent = 'Map generation failed.';
+    el('map-loading-error').textContent = e.message;
+    el('map-loading-error').classList.remove('hidden');
+    el('map-loading-retry').classList.remove('hidden');
   }
-
-  await tryGenerate();
 }
 
 function retryMapGeneration() {
@@ -3197,6 +3163,139 @@ function renderSections(sections) {
   if (sections.opponents) renderOpponentTurns(sections.opponents);
   if (sections.choices && sections.choices.length > 0) appendChoices(sections.choices);
   if (sections.debrief)   renderDebrief(sections.debrief);
+}
+
+// ── Real TI4 Base-Game System Tile Pool ──────────────────────────────────────
+// Planet fields: name, res, inf, trait ('Industrial'|'Cultural'|'Hazardous'), tech ('R'|'B'|'G'|'Y')
+const SYSTEM_TILE_POOL = [
+  // ─ Rich resource ─
+  { name:'Abyz/Fria',         planets:[{name:'Abyz',res:3,inf:0,trait:'Hazardous'},{name:'Fria',res:2,inf:0,trait:'Hazardous'}] },
+  { name:"Lodor/Hope's End",  planets:[{name:'Lodor',res:3,inf:1,trait:'Cultural'},{name:"Hope's End",res:3,inf:0,trait:'Hazardous'}] },
+  { name:'Bereg/Lirta IV',    planets:[{name:'Bereg',res:3,inf:1},{name:'Lirta IV',res:2,inf:3,trait:'Hazardous'}] },
+  { name:'New Albion/Starpoint', planets:[{name:'New Albion',res:1,inf:1,trait:'Industrial',tech:'G'},{name:'Starpoint',res:3,inf:1,trait:'Hazardous'}] },
+  { name:'Mellon/Zohbat',     planets:[{name:'Mellon',res:0,inf:2},{name:'Zohbat',res:3,inf:1,trait:'Hazardous'}] },
+  // ─ Influence ─
+  { name:'Arinam/Meer',       planets:[{name:'Arinam',res:1,inf:2,trait:'Industrial'},{name:'Meer',res:0,inf:3}] },
+  { name:'Centauri/Gral',     planets:[{name:'Centauri',res:1,inf:3,trait:'Cultural'},{name:'Gral',res:1,inf:2,trait:'Industrial'}] },
+  { name:'Saudor',            planets:[{name:'Saudor',res:2,inf:4}] },
+  { name:'Mehar Xull',        planets:[{name:'Mehar Xull',res:1,inf:3,trait:'Hazardous'}] },
+  // ─ Balanced ─
+  { name:'Wellon/Vefut II',   planets:[{name:'Wellon',res:2,inf:2,trait:'Industrial'},{name:'Vefut II',res:2,inf:2}] },
+  { name:"Ba'kal/Alio Prima", planets:[{name:"Ba'kal",res:3,inf:1,trait:'Industrial'},{name:'Alio Prima',res:1,inf:2,trait:'Cultural'}] },
+  { name:'Corneeq/Resculon',  planets:[{name:'Corneeq',res:1,inf:2},{name:'Resculon',res:2,inf:0}] },
+  { name:'Kraag/Siig',        planets:[{name:'Kraag',res:2,inf:1,trait:'Hazardous'},{name:'Siig',res:0,inf:3}] },
+  { name:'Velnor/Ylir',       planets:[{name:'Velnor',res:2,inf:1,trait:'Industrial',tech:'R'},{name:'Ylir',res:0,inf:2}] },
+  { name:'Thibah',            planets:[{name:'Thibah',res:1,inf:1,tech:'R'}] },
+  { name:'Tar\'Mann/Quinara', planets:[{name:"Tar'Mann",res:1,inf:1},{name:'Quinara',res:2,inf:1,trait:'Industrial'}] },
+  // ─ Wormhole ─
+  { name:'Perimeter/Ang',     wh:'alpha', planets:[{name:'Perimeter',res:2,inf:1,trait:'Industrial'},{name:'Ang',res:0,inf:3,trait:'Hazardous'}] },
+  { name:'Everra',            wh:'beta',  planets:[{name:'Everra',res:3,inf:1,trait:'Cultural'}] },
+  // ─ Anomalies ─
+  { name:'Asteroid Field', anomaly:'asteroid',     planets:[] },
+  { name:'Asteroid Field', anomaly:'asteroid',     planets:[] },
+  { name:'Supernova',      anomaly:'supernova',    planets:[] },
+  { name:'Gravity Rift',   anomaly:'gravity-rift', planets:[] },
+  { name:'Nebula',         anomaly:'nebula',       planets:[] },
+  // ─ Empty space ─
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+  { name:'', planets:[] },
+];
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildSystemTile(pos, t) {
+  const hasAnom = !!t.anomaly;
+  const isEmpty = !hasAnom && !t.wh && (!t.planets || !t.planets.length);
+  return {
+    pos, type: hasAnom ? 'anomaly' : isEmpty ? 'empty' : 'system',
+    name: t.name || '',
+    planets: t.planets || [],
+    res: (t.planets||[]).reduce((s,p) => s+(p.res||0), 0),
+    inf: (t.planets||[]).reduce((s,p) => s+(p.inf||0), 0),
+    wh: t.wh || false,
+    anomaly: t.anomaly || null,
+    ctrl: null, ships: null
+  };
+}
+
+function generateMapLocally() {
+  if (!_pendingGameStart) return [];
+  const { factionName } = _pendingGameStart;
+  const opponents = currentState?.opponents || [];
+  const totalPlayers = opponents.length + 1;
+  const factions = [factionName, ...opponents.map(o => o.faction || o.name)];
+
+  // Home positions: E=19, NE=22, NW=25, W=28, SW=31, SE=34
+  const homePositions = [19,22,25,28,31,34].slice(0, totalPlayers);
+  const homeSet = new Set([0, ...homePositions]);
+  const tiles = [];
+
+  // Mecatol Rex
+  tiles.push({ pos:0, type:'mecatol', name:'Mecatol Rex',
+    planets:[{name:'Mecatol Rex',res:1,inf:6}], res:1, inf:6,
+    wh:false, anomaly:null, ctrl:null, ships:null });
+
+  // Home systems — parse homeworlds strings from FACTIONS
+  homePositions.forEach((pos, i) => {
+    const faction = factions[i];
+    const f = FACTIONS[faction];
+    const planets = (f?.homeworlds || [`${faction} Prime (3R/3I)`]).map(hw => {
+      const m = hw.match(/^(.+?)\s*\((\d+)R\/(\d+)I\)$/);
+      if (!m) return { name: hw.replace(/\s*\(.*\)$/, '').trim(), res:2, inf:2 };
+      return { name: m[1].trim(), res: parseInt(m[2]), inf: parseInt(m[3]) };
+    });
+    tiles.push({ pos, type:'home', name: f?.name || faction,
+      faction, planets,
+      res: planets.reduce((s,p) => s+p.res, 0),
+      inf: planets.reduce((s,p) => s+p.inf, 0),
+      wh:false, anomaly:null, ctrl:faction, ships:null });
+  });
+
+  // Build ring position lists
+  const ring1 = [1,2,3,4,5,6].filter(p => !homeSet.has(p));
+  const ring2 = [7,8,9,10,11,12,13,14,15,16,17,18].filter(p => !homeSet.has(p));
+  const ring3 = [20,21,23,24,26,27,29,30,32,33,35,36].filter(p => !homeSet.has(p));
+
+  // Split pool by category
+  const pool = shuffleArray([...SYSTEM_TILE_POOL]);
+  const goodTiles = pool.filter(t => !t.anomaly && !t.wh && t.planets?.length > 0);
+  const wormholeTiles = pool.filter(t => t.wh);
+  const anomalyTiles = pool.filter(t => t.anomaly);
+  const emptyTiles = pool.filter(t => !t.anomaly && !t.wh && !t.planets?.length);
+
+  let gi = 0; // good index
+
+  // Ring 1: mostly good systems, up to 2 wormholes
+  const r1pool = shuffleArray([...goodTiles.slice(0, ring1.length - Math.min(2, wormholeTiles.length)), ...wormholeTiles.slice(0, 2)]);
+  gi = ring1.length - Math.min(2, wormholeTiles.length);
+  ring1.forEach((pos, i) => tiles.push(buildSystemTile(pos, r1pool[i] || {name:'',planets:[]})));
+
+  // Ring 2: remaining good + all anomalies + a couple empties
+  const r2pool = shuffleArray([...goodTiles.slice(gi, gi + 7), ...anomalyTiles, ...emptyTiles.slice(0, 2)]);
+  gi += 7;
+  ring2.forEach((pos, i) => tiles.push(buildSystemTile(pos, r2pool[i] || {name:'',planets:[]})));
+
+  // Ring 3: remaining good + remaining empty
+  const r3pool = shuffleArray([...goodTiles.slice(gi), ...emptyTiles.slice(2)]);
+  ring3.forEach((pos, i) => tiles.push(buildSystemTile(pos, r3pool[i] || {name:'',planets:[]})));
+
+  return tiles;
 }
 
 // ── Strategy Card Data & Picker ───────────────────────────────────────────────
