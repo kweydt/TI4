@@ -333,7 +333,7 @@ State is authoritative — read it, never infer from conversation history:
 - Opponents with passed=YES: exclude from opponentQueue entirely.
 - [PRIMARY USED] doesn't block tactical/component actions, only another Strategic Action.
 
-Before narrating each opponent's action, consult their `intent` in the state to decide what they do — their action should serve that plan. If a major event (big combat loss, objective scored, pivot forced) changes their strategy, emit INTENT with a revised plan.
+Before narrating each opponent's action, consult their intent field in the state to decide what they do — their action should serve that plan. If a major event (big combat loss, objective scored, pivot forced) changes their strategy, emit INTENT with a revised plan.
 
 Turn structure — one opponent per response, strict initiative order:
 - After Kramer acts or passes: set opponentQueue to all non-passed opponents due before his next turn (initiative order).
