@@ -645,12 +645,13 @@
   #faction-badge { font-family: var(--font-mono); font-size: 10px; color: var(--dim); letter-spacing: 0.06em; margin-bottom: 3px; }
   #round-badge { font-family: var(--font-title); font-size: 13px; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 7px; }
   .header-btns { display: flex; gap: 6px; justify-content: center; }
-  #new-game-btn {
+  #new-game-btn, #rewind-btn {
     font-family: var(--font-mono); font-size: 10px; color: var(--dim);
     background: none; border: 1px solid var(--border); border-radius: 3px;
     padding: 4px 8px; cursor: pointer;
   }
-  #new-game-btn:hover { color: var(--text); border-color: var(--dim); }
+  #new-game-btn:hover, #rewind-btn:hover { color: var(--text); border-color: var(--dim); }
+  #rewind-btn.hidden { display: none; }
 
   .sidebar-section-hdr {
     font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
