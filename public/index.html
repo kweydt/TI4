@@ -506,6 +506,18 @@
     letter-spacing: 0.05em;
   }
   #fs-opponent-count-buttons { display: flex; gap: 4px; }
+  #fs-legendary-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    user-select: none;
+  }
+  #fs-legendary-toggle input { cursor: pointer; accent-color: var(--accent); }
   .opp-count-btn {
     width: 26px; height: 26px;
     border: 1px solid var(--border);
@@ -1401,6 +1413,9 @@
         <button class="opp-count-btn" data-count="5">5</button>
       </div>
     </div>
+    <label id="fs-legendary-toggle" title="Use the exact Legendary 6-player PoK map">
+      <input type="checkbox" id="legendary-map-checkbox"> Legendary Map (PoK 6p)
+    </label>
     <button id="fs-start-btn" disabled>Choose Faction</button>
   </div>
 </div>
@@ -2039,6 +2054,7 @@ const FACTION_GROUPS = [
 
 let selectedFaction = null;
 let selectedOpponentCount = 3;
+let useLegendaryMap = false;
 
 document.querySelectorAll('.opp-count-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -2046,6 +2062,22 @@ document.querySelectorAll('.opp-count-btn').forEach(btn => {
     btn.classList.add('active');
     selectedOpponentCount = parseInt(btn.dataset.count);
   });
+});
+
+document.getElementById('legendary-map-checkbox').addEventListener('change', e => {
+  useLegendaryMap = e.target.checked;
+  const countBtns = document.querySelectorAll('.opp-count-btn');
+  if (useLegendaryMap) {
+    // Legendary is always 6-player — force 5 opponents
+    countBtns.forEach(b => { b.classList.remove('active'); b.disabled = true; });
+    document.querySelector('.opp-count-btn[data-count="5"]').classList.add('active');
+    selectedOpponentCount = 5;
+  } else {
+    countBtns.forEach(b => { b.disabled = false; });
+    // Restore last manual selection (default 3)
+    document.querySelector('.opp-count-btn[data-count="3"]').classList.add('active');
+    selectedOpponentCount = 3;
+  }
 });
 
 function buildFactionList() {
@@ -3446,6 +3478,72 @@ const SYSTEM_TILE_POOL = [
   { name:'', planets:[] },
 ];
 
+// ── Legendary Map Data ─────────────────────────────────────────────────────────
+// Tile number → planet/anomaly/wormhole data
+// Base game & PoK tile data sourced from acodcha/ti4-cartographer Systems.hpp
+// Thunder's Edge tile data (92-128) sourced from acodcha/ti4-cartographer Systems.hpp
+const LEGENDARY_TILE_DB = {
+  // ── Base game tiles ──
+  19: { name:'Wellon',              planets:[{name:'Wellon',res:1,inf:2,trait:'Industrial',tech:'C'}] },
+  21: { name:'Thibah',             planets:[{name:'Thibah',res:1,inf:1,trait:'Industrial',tech:'R'}] },
+  26: { name:'Lodor',              wh:'alpha', planets:[{name:'Lodor',res:3,inf:1,trait:'Cultural'}] },
+  36: { name:'Arnor / Lor',        planets:[{name:'Arnor',res:2,inf:1,trait:'Industrial'},{name:'Lor',res:1,inf:2,trait:'Industrial'}] },
+  37: { name:'Arinam / Meer',      planets:[{name:'Arinam',res:1,inf:2,trait:'Industrial'},{name:'Meer',res:0,inf:4,trait:'Hazardous',tech:'W'}] },
+  39: { name:'Alpha Wormhole',     wh:'alpha', planets:[] },
+  40: { name:'Beta Wormhole',      wh:'beta',  planets:[] },
+  42: { name:'Nebula',             anomaly:'nebula',    planets:[] },
+  43: { name:'Supernova',          anomaly:'supernova', planets:[] },
+  46: { name:'Empty Space',        planets:[] },
+  47: { name:'Empty Space',        planets:[] },
+  // ── PoK tiles ──
+  60: { name:'Perimeter',          planets:[{name:'Perimeter',res:2,inf:1,trait:'Industrial'}] },
+  64: { name:'Atlas',              wh:'beta', planets:[{name:'Atlas',res:3,inf:1,trait:'Hazardous'}] },
+  69: { name:'Accoen / Jeol Ir',   planets:[{name:'Accoen',res:2,inf:3,trait:'Industrial'},{name:'Jeol Ir',res:2,inf:3,trait:'Industrial'}] },
+  // ── Thunder's Edge tiles (92-128) ──
+  97:  { name:'Faunus',            legendary:true, planets:[{name:'Faunus',res:1,inf:3,trait:'Industrial',tech:'B'}] },
+  98:  { name:'Garbozia',          legendary:true, planets:[{name:'Garbozia',res:2,inf:1,trait:'Hazardous'}] },
+  99:  { name:'Emelpar',           legendary:true, planets:[{name:'Emelpar',res:0,inf:2,trait:'Cultural'}] },
+  100: { name:'Tempesta',          legendary:true, planets:[{name:'Tempesta',res:1,inf:1,trait:'Hazardous',tech:'R'}] },
+  101: { name:'Olergodt',          planets:[{name:'Olergodt',res:2,inf:1,trait:'Cultural'},{name:'Olergodt',res:2,inf:1,trait:'Hazardous'}] },
+  102: { name:'Andeara',           wh:'alpha', planets:[{name:'Andeara',res:1,inf:1,trait:'Industrial',tech:'R'}] },
+  103: { name:'Vira-Pics III',     planets:[{name:'Vira-Pics III',res:2,inf:3,trait:'Cultural'}] },
+  106: { name:'Lazul Rex / Cresius', planets:[{name:'Lazul Rex',res:2,inf:2,trait:'Cultural'},{name:'Cresius',res:0,inf:1,trait:'Hazardous'}] },
+  108: { name:'Capha / Kostboth',  planets:[{name:'Capha',res:3,inf:0,trait:'Hazardous'},{name:'Kostboth',res:0,inf:1,trait:'Cultural'}] },
+  110: { name:'Horizon / El\'Nath / Luthien VI', planets:[{name:'Horizon',res:1,inf:2,trait:'Cultural'},{name:"El'Nath",res:2,inf:0,trait:'Hazardous'},{name:'Luthien VI',res:3,inf:1,trait:'Hazardous'}] },
+  112: { name:'Mecatol Rex',       legendary:true, planets:[{name:'Mecatol Rex',res:1,inf:6}] },
+  113: { name:'Gravity Rift / Beta Wormhole', wh:'beta', anomaly:'gravity-rift', planets:[] },
+  114: { name:'Entropic Scar',     anomaly:'entropic-scar', planets:[] },
+  115: { name:'Industrex',         anomaly:'asteroid', planets:[{name:'Industrex',res:2,inf:0,trait:'Industrial',tech:'W'}] },
+  116: { name:'Lemox',             anomaly:'entropic-scar', planets:[{name:'Lemox',res:0,inf:3,trait:'Industrial'}] },
+  117: { name:'The Watchtower',    anomaly:'asteroid', planets:[{name:'The Watchtower',res:1,inf:1}] },
+  // ── PoK legendary tile ──
+  65:  { name:'Primor',            legendary:true, planets:[{name:'Primor',res:2,inf:1,trait:'Cultural'}] },
+};
+
+// Position → tile number for the Legendary 6-player PoK+Thunder's Edge map.
+// Home positions (19=E, 22=NE, 25=NW, 28=W, 31=SW, 34=SE) are assigned per faction.
+//
+// KEY DESIGN: all 6 legendary planets are in ring 1 (directly around Mecatol Rex),
+// equidistant from ALL players — hence "fight for every last scrap."
+// Ring-2 equidistant positions use normal tiles (the inversion from a standard map).
+const LEGENDARY_MAP_LAYOUT = [
+  // Ring 1 — all 6 legendary planets (tile order: clockwise from E)
+  {pos:1,tile:97},{pos:2,tile:98},{pos:3,tile:99},
+  {pos:4,tile:65},{pos:5,tile:115},{pos:6,tile:100},
+  // Ring 2 — regular systems at every position
+  {pos:7,tile:36},{pos:9,tile:21},{pos:11,tile:39},
+  {pos:13,tile:112},{pos:15,tile:26},{pos:17,tile:43},
+  {pos:8,tile:37},{pos:10,tile:42},{pos:12,tile:19},
+  {pos:14,tile:60},{pos:16,tile:64},{pos:18,tile:69},
+  // Ring 3 non-home (between home system pairs, clockwise from NE-E gap)
+  {pos:21,tile:114},{pos:20,tile:102},
+  {pos:23,tile:40}, {pos:24,tile:117},
+  {pos:26,tile:106},{pos:27,tile:108},
+  {pos:29,tile:113},{pos:30,tile:110},
+  {pos:32,tile:103},{pos:33,tile:46},
+  {pos:35,tile:101},{pos:36,tile:116},
+];
+
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -3475,8 +3573,60 @@ const CLIENT_OPPONENT_POOL = [
   'Barony of Letnev', 'Xxcha Kingdom'
 ];
 
+function generateLegendaryMap() {
+  if (!_pendingGameStart) return [];
+  const { factionName } = _pendingGameStart;
+
+  let opponents = (currentState?.opponents || []);
+  if (!opponents.length) {
+    opponents = CLIENT_OPPONENT_POOL
+      .filter(f => f !== factionName)
+      .slice(0, 5)
+      .map(f => ({ faction: f, name: f }));
+  }
+
+  // 6-player home positions: E=19, NE=22, NW=25, W=28, SW=31, SE=34
+  const homePositions = [19, 22, 25, 28, 31, 34];
+  const factions = [factionName, ...opponents.slice(0, 5).map(o => o.faction || o.name)];
+  const tiles = [];
+
+  // Mecatol Rex
+  tiles.push({ pos:0, type:'mecatol', name:'Mecatol Rex',
+    planets:[{name:'Mecatol Rex',res:1,inf:6}], res:1, inf:6,
+    wh:false, anomaly:null, ctrl:null, ships:null });
+
+  // Home systems
+  homePositions.forEach((pos, i) => {
+    const faction = factions[i];
+    const f = FACTIONS[faction];
+    const planets = (f?.homeworlds || [`${faction} Prime (3R/3I)`]).map(hw => {
+      const m = hw.match(/^(.+?)\s*\((\d+)R\/(\d+)I\)$/);
+      if (!m) return { name: hw.replace(/\s*\(.*\)$/, '').trim(), res:2, inf:2 };
+      return { name: m[1].trim(), res: parseInt(m[2]), inf: parseInt(m[3]) };
+    });
+    tiles.push({ pos, type:'home', name: f?.name || faction, faction, planets,
+      res: planets.reduce((s,p) => s+p.res, 0),
+      inf: planets.reduce((s,p) => s+p.inf, 0),
+      wh:false, anomaly:null, ctrl:faction, ships:null });
+  });
+
+  // Non-home tiles from the fixed Legendary layout
+  LEGENDARY_MAP_LAYOUT.forEach(({ pos, tile: tileNum }) => {
+    const t = LEGENDARY_TILE_DB[tileNum];
+    if (!t) {
+      tiles.push({ pos, type:'empty', name:'', planets:[], res:0, inf:0,
+        wh:false, anomaly:null, ctrl:null, ships:null });
+      return;
+    }
+    tiles.push(buildSystemTile(pos, t));
+  });
+
+  return tiles;
+}
+
 function generateMapLocally() {
   if (!_pendingGameStart) return [];
+  if (useLegendaryMap) return generateLegendaryMap();
   const { factionName, opponentCount } = _pendingGameStart;
 
   // Use real opponents if state is already populated, otherwise derive from pool
