@@ -4,7 +4,7 @@ const os = require('os');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '500kb' }));
 app.use(express.static('public'));
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -469,13 +469,14 @@ ${(state.opponents||[]).map(o => {
   const ct = o.commandTokens || {tactics:3,fleet:3,strategy:2};
   const planetList = (o.planets||[]).map(p => typeof p === 'string' ? p : `${p.name}(${p.res}R/${p.inf}I)`).join(', ') || 'none';
   const fleetLines = Object.entries(o.fleets||{}).map(([sys,ships]) => {
+    if (!ships || typeof ships !== 'object') return null;
     const parts = Object.entries(ships).filter(([,n])=>n>0).map(([t,n])=>`${n}${t}`).join('+');
-    return `${sys}:[${parts}]`;
-  }).join(' ') || 'home only';
+    return parts ? `${sys}:[${parts}]` : null;
+  }).filter(Boolean).join(' ') || 'home only';
   return `  ${o.name} (${o.faction||'?'}): cards=${cards} | passed=${o.hasPassed?'YES':'no'} | vp=${o.vp||0} | tokens: tac=${ct.tactics} fleet=${ct.fleet} strat=${ct.strategy} | tg=${o.tradeGoods||0}\n    planets: ${planetList}\n    fleets: ${fleetLines}\n    intent: ${o.intent||'(unknown)'}`;
 }).join('\n') || '  (none)'}
-Your Planets: ${state.player.planets.map(p => `${p.name}(${p.resources}/${p.influence},${p.ready ? 'ready' : 'exhausted'})`).join(', ')}
-Your Technologies: ${state.player.technologies.join(', ') || 'none'}
+Your Planets: ${(state.player.planets||[]).map(p => p && typeof p === 'object' ? `${p.name}(${p.resources||0}/${p.influence||0},${p.ready ? 'ready' : 'exhausted'})` : String(p)).join(', ') || 'none'}
+Your Technologies: ${(state.player.technologies||[]).join(', ') || 'none'}
 Your Action Cards in hand: ${state.player.actionCards?.length ? state.player.actionCards.join(', ') : 'none'}
 Your Secret Objectives: ${state.player.secretObjectives?.length ? state.player.secretObjectives.map(o => `${o.name}${o.scored?' (scored)':''}`).join(', ') : 'none'}
 Your Promissory Notes held: ${state.player.promissoryNotes?.length ? state.player.promissoryNotes.join(', ') : 'none'}

@@ -4634,7 +4634,10 @@ async function sendTurn(text, silent) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ history, state: currentState, board: boardState })
     });
-    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => null);
+      throw new Error(errBody?.error || `Server error: ${res.status}`);
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
